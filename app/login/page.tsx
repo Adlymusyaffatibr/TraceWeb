@@ -11,26 +11,42 @@ export default function AuthPage() {
       </div>
 
       {/* RIGHT FORM */}
-      {/* RIGHT FORM */}
-      <div className="flex w-full md:w-1/2 items-center justify-center bg-zinc-100">
-        <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow text-center">
+      <div className="flex w-full md:w-1/2 items-center justify-center bg-white">
+        <div className="w-full max-w-sm p-8 text-center">
+          
           {/* LOGO */}
           <div className="flex items-center justify-center gap-3 mb-6">
             <Image src="/images/logot.jpeg" alt="logo" width={55} height={55} />
-          <span className="text-lg font-semibold">Trace.</span>
+            <span className="text-lg font-semibold">Trace.</span>
           </div>
 
-          <h1 className="text-2xl font-bold mb-2 text-black">Sign In for the Best Experience</h1>
+          {/* TITLE */}
+          <h1 className="text-xl font-bold mb-2 text-black font-playfair">
+            Sign In for the Best Experience
+          </h1>
 
-          <p className="text-sm text-gray-500 mb-6">Trace is a smart financial tracking app for building healthy financial habits. Track expenses, set budget limits, and manage your cash flow easily and securely.</p>
+          <p className="text-sm text-gray-500 mb-6">
+            Trace is a smart financial tracking app for building healthy financial habits.
+            Track expenses, set budget limits, and manage your cash flow easily and securely.
+          </p>
 
           {/* INPUT */}
-          <input type="email" placeholder="Email" className="w-full border rounded-lg px-4 py-3 mb-4" />
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full border rounded-lg px-4 py-3 mb-4"
+          />
 
-          <input type="password" placeholder="Password" className="w-full border rounded-lg px-4 py-3 mb-4" />
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full border rounded-lg px-4 py-3 mb-4"
+          />
 
           {/* SIGN IN */}
-          <button className="w-full bg-black text-white py-3 rounded-full mb-4">Sign In</button>
+          <button className="w-full bg-black text-white py-3 rounded-full mb-4">
+            Sign In
+          </button>
 
           {/* DIVIDER */}
           <div className="flex items-center my-6">
@@ -40,13 +56,16 @@ export default function AuthPage() {
           </div>
 
           {/* CREATE ACCOUNT */}
-          <button className="w-full border py-3 rounded-full mb-4">Create Account</button>
+          <button className="w-full border py-3 rounded-full mb-4">
+            Create Account
+          </button>
 
           {/* GOOGLE */}
           <button className="w-full border py-3 rounded-full flex items-center justify-center gap-2">
             <Image src="/images/google.png" alt="google" width={20} height={20} />
             Sign in With Google
           </button>
+
         </div>
       </div>
     </div>

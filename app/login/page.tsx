@@ -2,9 +2,15 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation"
 
 export default function AuthPage() {
   const [isSignup, setIsSignup] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = () => {
+    router.push("/dashboard");
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -37,7 +43,7 @@ export default function AuthPage() {
           <input type="password" placeholder="Password" className="w-full border rounded-lg px-4 py-3 mb-4" />
 
           {/* MAIN BUTTON */}
-          <button className="w-full bg-black text-white py-3 rounded-full mb-4">{isSignup ? "Sign Up" : "Sign In"}</button>
+          <button onClick={handleSubmit} className="w-full bg-black text-white py-3 rounded-full mb-4">{isSignup ? "Sign Up" : "Sign In"}</button>
 
           {/* DIVIDER */}
           <div className="flex items-center my-6">

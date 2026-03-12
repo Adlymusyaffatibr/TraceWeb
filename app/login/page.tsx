@@ -1,30 +1,40 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function AuthPage() {
-  const [isSignup, setIsSignup] = useState(false);
-
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const mode = searchParams.get("mode");
+
+  const [isSignup, setIsSignup] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    if (mode === "signup") {
+      setIsSignup(true);
+    } else {
+      setIsSignup(false);
+    }
+  }, [mode]);
 
   const handleSubmit = () => {
     if (isSignup && !name) {
-      alert('Name harus diisi');
+      alert("Name harus diisi");
       return;
     }
 
     if (!email || !password) {
-      alert('Email dan password harus diisi');
+      alert("Email dan password harus diisi");
       return;
     }
 
-    router.push('/OTP');
+    router.push("/otp");
   };
 
   return (
@@ -58,11 +68,11 @@ export default function AuthPage() {
           {/* TITLE */}
           <h1
             className="text-2xl md:text-3xl font-bold mb-3 text-black"
-            style={{ fontFamily: 'var(--font-playfair)' }}
+            style={{ fontFamily: "var(--font-playfair)" }}
           >
             {isSignup
-              ? 'Sign Up for the Best Experience'
-              : 'Sign In for the Best Experience'}
+              ? "Sign Up for the Best Experience"
+              : "Sign In for the Best Experience"}
           </h1>
 
           {/* DESCRIPTION */}
@@ -107,14 +117,14 @@ export default function AuthPage() {
             onClick={handleSubmit}
             className="w-full bg-black text-white py-2 rounded-full mb-4 hover:bg-gray-800 transition"
           >
-            {isSignup ? 'Sign Up' : 'Sign In'}
+            {isSignup ? "Sign Up" : "Sign In"}
           </button>
 
           {/* DIVIDER */}
           <div className="flex items-center my-6">
             <div className="flex-1 border-t border-gray-300"></div>
             <span className="px-3 text-sm text-gray-500">
-              {isSignup ? 'Already have an account?' : 'New to Trace?'}
+              {isSignup ? "Already have an account?" : "New to Trace?"}
             </span>
             <div className="flex-1 border-t border-gray-300"></div>
           </div>
@@ -124,7 +134,7 @@ export default function AuthPage() {
             onClick={() => setIsSignup(!isSignup)}
             className="w-full border border-gray-300 py-2 rounded-full mb-4 hover:bg-gray-50 transition"
           >
-            {isSignup ? 'Sign In' : 'Create Account'}
+            {isSignup ? "Sign In" : "Create Account"}
           </button>
 
           {/* GOOGLE LOGIN */}

@@ -24,7 +24,7 @@ export default function AuthPage() {
       return;
     }
 
-    router.push('/dashboard');
+    router.push('/OTP');
   };
 
   return (

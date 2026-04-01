@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Home from '@/components/icons/Home';
 import Category from '@/components/icons/Category';
+import Image from 'next/image';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -34,12 +35,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 <div className=" bg-[#252525] h-screen w-2/12 fixed text-white">
                     <div className="">
                         <div className=" border-b border-[#3e3e3e] ">
-                            <div className='flex p-5 items-center gap-3'>
+                            <div className='flex py-5 px-3 items-center gap-3'>
                                 <div className=''>
-                                    <img
-                                        src="/assets/white_logo.png"
+                                    <Image
+                                        src="/images/white_logo.png"
                                         alt="Logo"
-                                        className="w-8 h-8"
+                                        className="size-12"
+                                        width={36}
+                                        height={36}
                                     />
                                 </div>
                                 <div>

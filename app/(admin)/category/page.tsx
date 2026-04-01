@@ -311,8 +311,8 @@ export default function UnifiedCategoryPage() {
                         </div>
                         <div>
                             <p className="text-[40px] font-medium leading-none mb-3 text-[#2d2d2d]">{isLoading ? '...' : totalCategory}</p>
-                            <div className="inline-block bg-white px-3 py-1.5 rounded-lg">
-                                <p className="text-[13px] text-[#7a7a7a] font-medium">Last Added : 1 Days Ago</p>
+                            <div className="inline-block bg-gray-300 px-3 py-1.5 rounded-lg">
+                                <p className="text-[13px] text-[#494949] font-medium">Last Added : 1 Days Ago</p>
                             </div>
                         </div>
                     </div>
@@ -330,8 +330,8 @@ export default function UnifiedCategoryPage() {
                         </div>
                         <div>
                             <p className="text-[40px] font-medium leading-none mb-3 text-[#2d2d2d]">{isLoading ? '...' : totalSubCategory}</p>
-                            <div className="inline-block bg-white px-3 py-1.5 rounded-lg">
-                                <p className="text-[13px] text-[#7a7a7a] font-medium">Last Added : 1 Days Ago</p>
+                            <div className="inline-block bg-gray-300 px-3 py-1.5 rounded-lg">
+                                <p className="text-[13px] text-[#494949] font-medium">Last Added : 1 Days Ago</p>
                             </div>
                         </div>
                     </div>

@@ -9,29 +9,46 @@ interface Category {
     id: string;
     name: string;
     type: string;
-    description: string;
-    sub_categories?: any[];
 }
 
-export default function CategoryPage() {
+interface SubCategory {
+    id: string;
+    name: string;
+    description: string;
+    category_id: string;
+    category?: Category;
+    Category?: Category;
+}
+
+export default function SubCategoryPage() {
+    const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
-    const [totalCategory, setTotalCategory] = useState(0);
+    const [totalSubCategory, setTotalSubCategory] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
-    const totalPages = Math.ceil(categories.length / itemsPerPage);
+    const totalPages = Math.ceil(subCategories.length / itemsPerPage);
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = categories.slice(indexOfFirstItem, indexOfLastItem);
+    const currentItems = subCategories.slice(indexOfFirstItem, indexOfLastItem);
 
     // Modal & Form State
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState<'create' | 'edit' | 'delete'>('create');
     const [editId, setEditId] = useState<string | null>(null);
-    const [formData, setFormData] = useState({ name: '', type: '', description: '' });
+    const [formData, setFormData] = useState({ name: '', description: '', category_id: '' });
     const [errorMsg, setErrorMsg] = useState('');
+
+    const fetchSubCategories = async () => {
+        try {
+            const res = await axios.get('http://localhost:5000/sub-categories', { withCredentials: true });
+            setSubCategories(res.data.data);
+        } catch (error) {
+            console.error('Failed to fetch sub categories:', error);
+        }
+    };
 
     const fetchCategories = async () => {
         try {
@@ -42,18 +59,19 @@ export default function CategoryPage() {
         }
     };
 
-    const fetchTotalCategory = async () => {
+    const fetchTotalSubCategory = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/category/info-category', { withCredentials: true });
-            setTotalCategory(res.data.totalCategory);
+            const res = await axios.get('http://localhost:5000/sub-categories/info-subcategory', { withCredentials: true });
+            setTotalSubCategory(res.data.totalSubCategory);
         } catch (error) {
-            console.error('Failed to fetch total category:', error);
+            console.error('Failed to fetch total sub category:', error);
         }
     };
 
     useEffect(() => {
+        fetchSubCategories();
         fetchCategories();
-        fetchTotalCategory();
+        fetchTotalSubCategory();
     }, []);
 
     const goToPage = (page: number) => {
@@ -72,18 +90,18 @@ export default function CategoryPage() {
 
     const handleOpenCreateModal = () => {
         setModalMode('create');
-        setFormData({ name: '', type: '', description: '' });
+        setFormData({ name: '', description: '', category_id: '' });
         setErrorMsg('');
         setIsModalOpen(true);
     };
 
-    const handleOpenEditModal = (category: Category) => {
+    const handleOpenEditModal = (subCategory: SubCategory) => {
         setModalMode('edit');
-        setEditId(category.id);
+        setEditId(subCategory.id);
         setFormData({ 
-            name: category.name, 
-            type: category.type, 
-            description: category.description || '' 
+            name: subCategory.name, 
+            description: subCategory.description || '',
+            category_id: String(subCategory.category_id)
         });
         setErrorMsg('');
         setIsModalOpen(true);
@@ -101,25 +119,29 @@ export default function CategoryPage() {
             setIsModalOpen(false);
             return;
         }
-        setFormData({ name: '', type: '', description: '' });
+        setFormData({ name: '', description: '', category_id: '' });
         setErrorMsg('');
     };
 
     const handleSubmit = async () => {
         setErrorMsg('');
-        if (modalMode !== 'delete' && (!formData.name || !formData.type)) {
-            setErrorMsg('Name and Type are required.');
+        if (modalMode !== 'delete' && (!formData.name || !formData.category_id)) {
+            setErrorMsg('Name and Category are required.');
             return;
         }
 
         setIsLoading(true);
         try {
+            const payload = {
+                ...formData
+            };
+
             if (modalMode === 'create') {
-                await axios.post('http://localhost:5000/category', formData, { withCredentials: true });
+                await axios.post('http://localhost:5000/sub-categories', payload, { withCredentials: true });
             } else if (modalMode === 'edit' && editId) {
-                await axios.put(`http://localhost:5000/category/${editId}`, formData, { withCredentials: true });
+                await axios.put(`http://localhost:5000/sub-categories/${editId}`, payload, { withCredentials: true });
             } else if (modalMode === 'delete' && editId) {
-                await axios.delete(`http://localhost:5000/category/${editId}`, { withCredentials: true });
+                await axios.delete(`http://localhost:5000/sub-categories/${editId}`, { withCredentials: true });
                 
                 // Adjust pagination if deleting last item on page
                 if (currentItems.length === 1 && currentPage > 1) {
@@ -128,8 +150,8 @@ export default function CategoryPage() {
             }
             
             setIsModalOpen(false);
-            fetchCategories();
-            fetchTotalCategory();
+            fetchSubCategories();
+            fetchTotalSubCategory();
         } catch (err: any) {
             if (err.response && err.response.data) {
                 setErrorMsg(err.response.data.error || err.response.data.message || 'An error occurred');
@@ -148,7 +170,7 @@ export default function CategoryPage() {
                     closeButton={() => setIsModalOpen(false)}
                     resetButton={handleReset}
                     submitButton={handleSubmit}
-                    title={modalMode === 'create' ? "Create Category" : modalMode === 'edit' ? "Edit Category" : "Delete Category"}>
+                    title={modalMode === 'create' ? "Create Sub Category" : modalMode === 'edit' ? "Edit Sub Category" : "Delete Sub Category"}>
                     {modalMode === 'delete' ? (
                         <div className="flex flex-col gap-4 pb-4">
                             {errorMsg && (
@@ -157,7 +179,7 @@ export default function CategoryPage() {
                                 </div>
                             )}
                             <p className="text-gray-700 mt-2">
-                                Are you sure you want to delete this category? This action cannot be undone.
+                                Are you sure you want to delete this sub category? This action cannot be undone.
                             </p>
                         </div>
                     ) : (
@@ -168,21 +190,22 @@ export default function CategoryPage() {
                                 </div>
                             )}
                             <Input 
-                                label="Category Name" 
-                                placeholder="e.g. Food & Beverage"
+                                label="Sub Category Name" 
+                                placeholder="e.g. Food"
                                 value={formData.name}
                                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                             />
                             <div className="flex flex-col gap-1 w-full">
-                                <label className="text-sm font-medium text-gray-700">Type</label>
+                                <label className="text-sm font-medium text-gray-700">Category</label>
                                 <select 
                                     className="w-full border rounded-md px-3 py-2 text-sm outline-none border-gray-300 focus:border-blue-500 bg-white"
-                                    value={formData.type}
-                                    onChange={(e) => setFormData({...formData, type: e.target.value})}
+                                    value={formData.category_id}
+                                    onChange={(e) => setFormData({...formData, category_id: e.target.value})}
                                 >
-                                    <option value="" disabled>Select Type</option>
-                                    <option value="INCOME">Income</option>
-                                    <option value="EXPENSE">Expense</option>
+                                    <option value="" disabled>Select Category</option>
+                                    {categories.map((cat) => (
+                                        <option key={cat.id} value={cat.id}>{cat.name} ({cat.type})</option>
+                                    ))}
                                 </select>
                             </div>
                             <Input 
@@ -198,8 +221,8 @@ export default function CategoryPage() {
 
             <div className="h-[calc(100%-2rem)] overflow-y-auto pl-8 pr-4 my-4 mr-2 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-gray-400">
                 <div>
-                    <h1 className="text-4xl font-bold">Category</h1>
-                    <p className="">Manage Your Category Here</p>
+                    <h1 className="text-4xl font-bold">Sub Category</h1>
+                    <p className="">Manage Your Sub Category Here</p>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -208,11 +231,11 @@ export default function CategoryPage() {
                             <div className="flex items-center gap-2">
                                 <div className="size-4 bg-blue-600 rounded-full"></div>
                                 <p className="font-medium text-[#646464] text-lg leading-none">
-                                    Total Category
+                                    Total Sub Category
                                 </p>
                             </div>
                             <div>
-                                <p className="text-4xl font-semibold mt-4">{isLoading ? '...' : totalCategory}</p>
+                                <p className="text-4xl font-semibold mt-4">{isLoading ? '...' : totalSubCategory}</p>
                             </div>
                         </div>
                     </div>
@@ -223,13 +246,13 @@ export default function CategoryPage() {
                         onClick={handleOpenCreateModal}
                         className="outline text-sm px-4 py-2 rounded-lg outline-[#BEBEBE] hover:bg-gray-50 flex items-center justify-center cursor-pointer transition-colors"
                     >
-                        Add Category
+                        Add Sub Category
                     </button>
                     <div className="flex items-center gap-3">
                         <div className="relative">
                             <select
                                 className="appearance-none outline-[#BEBEBE] outline-1 px-4 pr-10 py-2 rounded-lg text-sm bg-white hover:bg-gray-50 transition-colors cursor-pointer w-full text-gray-700">
-                                <option value="">By Type</option>
+                                <option value="">By Category</option>
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
                                 <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -251,11 +274,9 @@ export default function CategoryPage() {
                     <table className="w-full text-left border-collapse table-fixed">
                         <thead>
                             <tr className="bg-[#F3F4F6] text-[#2d2d2d] text-sm font-semibold">
-                                <th className="py-3 px-4 rounded-tl-xl w-[25%] border-b border-gray-100">Name</th>
-                                <th className="py-3 px-4 w-[35%] border-b border-gray-100">Description</th>
-                                <th className="py-3 px-4 text-center w-[15%] border-b border-gray-100">Sub Categories</th>
-                                <th className="py-3 px-4 text-center w-[15%] border-b border-gray-100">Type</th>
-                                <th className="py-3 px-4 text-center rounded-tr-xl w-[10%] border-b border-gray-100">Action</th>
+                                <th className="py-3 px-4 rounded-tl-xl w-[40%] border-b border-gray-100">Name</th>
+                                <th className="py-3 px-4 w-[40%] border-b border-gray-100">Category</th>
+                                <th className="py-3 px-4 text-center rounded-tr-xl w-[20%] border-b border-gray-100">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -264,25 +285,15 @@ export default function CategoryPage() {
                                     key={item.id}
                                     className="border-b border-gray-100 last:border-none text-sm hover:bg-gray-50/50 transition-colors group">
                                     <td className="py-4 px-4 font-semibold text-gray-900">{item.name}</td>
-                                    <td className="py-4 px-4 text-gray-500 truncate max-w-[200px]" title={item.description || ''}>{item.description || '-'}</td>
-                                    <td className="py-4 px-4 text-center font-medium text-gray-600">{item.sub_categories ? item.sub_categories.length : 0}</td>
-                                    <td className="py-4 px-4 text-center">
-                                        <span className={`px-3 py-1 text-[11px] font-bold tracking-wider rounded-full ${
-                                            (item.type || '').toUpperCase() === 'INCOME' 
-                                            ? 'bg-green-100 text-green-700' 
-                                            : (item.type || '').toUpperCase() === 'EXPENSE' 
-                                            ? 'bg-red-100 text-red-700' 
-                                            : 'bg-gray-100 text-gray-700'
-                                        }`}>
-                                            {item.type ? item.type.toUpperCase() : '-'}
-                                        </span>
+                                    <td className="py-4 px-4 text-gray-600 font-medium">
+                                        {categories.find(c => String(c.id) === String(item.category_id) || String(c.id) === String((item as any).categoryId))?.name || item.category?.name || item.Category?.name || '-'}
                                     </td>
                                     <td className="py-4 px-4">
                                         <div className="flex items-center justify-center gap-2 text-gray-500">
                                             <button 
                                                 onClick={() => handleOpenEditModal(item)}
                                                 className="hover:text-blue-600 transition-colors bg-transparent p-1.5 rounded-md cursor-pointer"
-                                                title="Edit Category"
+                                                title="Edit Sub Category"
                                             >
                                                 <svg className="size-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -291,7 +302,7 @@ export default function CategoryPage() {
                                             <button 
                                                 onClick={() => handleOpenDeleteModal(item.id)}
                                                 className="hover:text-red-600 transition-colors bg-transparent p-1.5 rounded-md cursor-pointer"
-                                                title="Delete Category"
+                                                title="Delete Sub Category"
                                             >
                                                 <svg className="size-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -302,20 +313,20 @@ export default function CategoryPage() {
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={5} className="py-8 text-center text-gray-500 bg-gray-50/30 rounded-b-xl">
-                                        {isLoading ? "Loading..." : "No categories found. Click 'Add Category' to get started."}
+                                    <td colSpan={3} className="py-8 text-center text-gray-500 bg-gray-50/30 rounded-b-xl">
+                                        {isLoading ? "Loading..." : "No sub categories found. Click 'Add Sub Category' to get started."}
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
 
-                    {categories.length > 0 && (
+                    {subCategories.length > 0 && (
                         <div className="flex items-center justify-between mt-8 text-sm text-[#646464]">
                             <div>
                                 Showing:{' '}
                                 <span className="font-bold text-black">{currentItems.length}</span> Of{' '}
-                                {categories.length}
+                                {subCategories.length}
                             </div>
                             <div className="flex items-center gap-1">
                                 <button

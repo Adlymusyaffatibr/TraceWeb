@@ -1,8 +1,7 @@
 'use client';
 
-import React from 'react';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import axios from 'axios';
 import Home from '@/components/icons/Home';
 import Category from '@/components/icons/Category';
@@ -10,7 +9,10 @@ import Image from 'next/image';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
+    const pathname = usePathname();
+
     const [isLogout, setIsLogout] = useState(false);
+    const [openTrans, setOpenTrans] = useState(true);
 
     const handleLogout = async () => {
         setIsLogout(true);
@@ -20,7 +22,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 withCredentials: true,
             });
 
-            console.log('Logout Berhasil');
             router.push('/login?mode=signin');
         } catch (err: any) {
             console.log(err);
@@ -31,47 +32,126 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     return (
         <div className="flex min-h-screen bg-gray-100">
+
+            {/* SIDEBAR */}
             <aside className="w-2/12 relative">
-                <div className=" bg-[#252525] h-screen w-2/12 fixed text-white">
-                    <div className="">
-                        <div className=" border-b border-[#3e3e3e] ">
-                            <div className='flex py-5 px-3 items-center gap-3'>
-                                <div className=''>
-                                    <Image
-                                        src="/images/white_logo.png"
-                                        alt="Logo"
-                                        className="size-12"
-                                        width={36}
-                                        height={36}
-                                    />
-                                </div>
-                                <div>
-                                    <h1 className="font-semibold text-xl">Trace.</h1>
-                                    <p className="text-[#AAAFB2] text-xs">Know Where It Goes</p>
-                                </div>
+                <div className="bg-[#252525] h-screen w-2/12 fixed text-white">
+
+                    {/* LOGO */}
+                    <div className="border-b border-[#3e3e3e]">
+                        <div className="flex py-5 px-3 items-center gap-3">
+                            <Image
+                                src="/images/white_logo.png"
+                                alt="Logo"
+                                className="size-12"
+                                width={36}
+                                height={36}
+                            />
+                            <div>
+                                <h1 className="font-semibold text-xl">Trace.</h1>
+                                <p className="text-[#AAAFB2] text-xs">Know Where It Goes</p>
                             </div>
-                        </div>
-                        <div className="mx-3">
-                            <div className='mt-5'>
-                                <h1 className='font-semibold text-[#AAAFB2] text-sm ml-2 mb-3'>MENU</h1>
-                                <div className='flex flex-col gap-1'>
-                                <div className='flex items-center gap-2 hover:bg-[#3e3e3e] transition duration-300 rounded-md px-3 mr-2 py-3 cursor-pointer'>
-                                    <Home className='size-5' />
-                                    <p className='text-sm text-[#AAAFB2]'>Dashboard</p>
-                                </div>
-                                <div className='flex items-center gap-2 hover:bg-[#3e3e3e] rounded-md transition duration-300 px-3 mr-2 py-3 cursor-pointer'>
-                                    <Category className='size-5' />
-                                    <p className='text-sm text-[#AAAFB2]'>Categories</p>
-                                </div>
-                                </div>
-                            </div>
-                        {/* <button onClick={handleLogout}>Logout</button> */}
                         </div>
                     </div>
+
+                    {/* MENU */}
+                    <div className="mx-3 mt-5">
+                        <h1 className="font-semibold text-[#AAAFB2] text-sm ml-2 mb-3">
+                            MENU
+                        </h1>
+
+                        <div className="flex flex-col gap-1 text-[#AAAFB2]">
+
+                            {/* DASHBOARD */}
+                            <div
+                                onClick={() => router.push('/dashboard')}
+                                className={`flex items-center gap-2 px-3 py-3 mr-2 rounded-md cursor-pointer transition duration-200
+                                    ${pathname === '/dashboard'
+                                        ? 'bg-[#3e3e3e]'
+                                        : 'hover:bg-[#3e3e3e]'}
+                                `}
+                            >
+                                <Home className="size-5" />
+                                <p className="text-sm">Dashboard</p>
+                            </div>
+
+                            {/* TRANSACTIONS */}
+                            <div>
+
+                                {/* PARENT */}
+                                <div
+                                    onClick={() => setOpenTrans(!openTrans)}
+                                    className="flex items-center justify-between px-3 py-3 mr-2 rounded-md cursor-pointer hover:bg-[#3e3e3e] transition"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <Category className="size-5" />
+                                        <p className="text-sm">Transactions</p>
+                                    </div>
+                                    <span className="text-xs">
+                                        {openTrans ? '▾' : '▸'}
+                                    </span>
+                                </div>
+
+                                {/* CHILD */}
+                                {openTrans && (
+                                    <div className="ml-5 flex flex-col gap-1 mt-1">
+
+                                        <div
+                                            onClick={() => router.push('/transactions')}
+                                            className={`text-sm px-3 py-2 rounded-md cursor-pointer transition
+                                                ${pathname === '/transactions'
+                                                    ? 'bg-[#3e3e3e]'
+                                                    : 'hover:bg-[#3e3e3e]'}
+                                            `}
+                                        >
+                                            Dashboard
+                                        </div>
+
+                                        <div
+                                            onClick={() => router.push('/transactions/wishlist')}
+                                            className={`text-sm px-3 py-2 rounded-md cursor-pointer transition
+                                                ${pathname === '/transactions/wishlist'
+                                                    ? 'bg-[#3e3e3e]'
+                                                    : 'hover:bg-[#3e3e3e]'}
+                                            `}
+                                        >
+                                            Wishlist
+                                        </div>
+
+                                        <div
+                                            onClick={() => router.push('/transactions/history')}
+                                            className={`text-sm px-3 py-2 rounded-md cursor-pointer transition
+                                                ${pathname === '/transactions/history'
+                                                    ? 'bg-[#3e3e3e]'
+                                                    : 'hover:bg-[#3e3e3e]'}
+                                            `}
+                                        >
+                                            History
+                                        </div>
+
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* LOGOUT (optional) */}
+                    {/* 
+                    <div className="absolute bottom-5 w-full px-3">
+                        <button
+                            onClick={handleLogout}
+                            className="w-full bg-red-500 py-2 rounded-md text-sm"
+                        >
+                            Logout
+                        </button>
+                    </div>
+                    */}
+
                 </div>
             </aside>
+
+            {/* MAIN */}
             <main className="w-10/12">
-                {/* Konten dari dashboard/page.tsx bakal dirender di dalem sini */}
                 {children}
             </main>
         </div>

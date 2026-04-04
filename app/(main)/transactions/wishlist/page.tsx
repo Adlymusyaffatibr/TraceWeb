@@ -99,7 +99,7 @@ export default function WishlistPage() {
         {list.map((item) => (
           <div
             key={item.id}
-            className="bg-white px-12 py-5 rounded-lg  flex items-center justify-between"
+            className="bg-white px-12 py-4 rounded-lg  flex items-center justify-between"
           >
             {/* NAME */}
             <div className="w-1/4">
@@ -108,14 +108,14 @@ export default function WishlistPage() {
 
             {/* PRIORITY */}
             <div className="w-1/6">
-              <span className="bg-red-200 text-red-600 px-5 py-1.5 font-semibold rounded-lg text-xs">
+              <span className="inline-block w-28 text-center bg-red-200 text-red-600 py-1.5 font-semibold rounded-lg text-[0.65rem]">
                 {item.priority}
               </span>
             </div>
 
             {/* STATUS */}
             <div className="w-1/6">
-              <span className="bg-green-200 text-green-600 px-5 py-1.5 font-semibold rounded-lg text-xs">
+              <span className="inline-block w-28 text-center bg-green-200 text-green-600 py-1.5 font-semibold rounded-lg text-[0.65rem]">
                 {item.status}
               </span>
             </div>

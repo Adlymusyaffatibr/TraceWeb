@@ -59,25 +59,27 @@ const Modal = ({
         </div>
 
         {/* --- FOOTER / ACTIONS --- */}
-        <div className="mt-5 flex justify-end gap-3 px-5 py-2 border-t border-[#D2D2D2]">
-          {resetButton && (
-            <button
-              onClick={resetButton}
-              className="px-6 py-1.5 text-sm rounded-lg font-medium border border-[#D2D2D2] text-gray-700 hover:bg-gray-100 duration-200"
-            >
-              Reset
-            </button>
-          )}
-          
-          {submitButton && (
-            <button
-              onClick={submitButton}
-              className="px-6 py-1.5 text-sm rounded-lg font-medium text-white bg-black hover:bg-black/80 cursor-pointer duration-200"
-            >
-              Submit
-            </button>
-          )}
-        </div>
+        {(resetButton || submitButton) && (
+          <div className="mt-5 flex justify-end gap-3 px-5 py-2 border-t border-[#D2D2D2]">
+            {resetButton && (
+              <button
+                onClick={resetButton}
+                className="px-6 py-1.5 text-sm rounded-lg font-medium border border-[#D2D2D2] text-gray-700 hover:bg-gray-100 duration-200"
+              >
+                Reset
+              </button>
+            )}
+            
+            {submitButton && (
+              <button
+                onClick={submitButton}
+                className="px-6 py-1.5 text-sm rounded-lg font-medium text-white bg-black hover:bg-black/80 cursor-pointer duration-200"
+              >
+                Submit
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

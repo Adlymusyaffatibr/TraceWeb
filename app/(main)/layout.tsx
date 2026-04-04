@@ -31,7 +31,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-100">
+        <div className="flex h-screen overflow-hidden bg-gray-100">
 
             {/* SIDEBAR */}
             <aside className="w-2/12 relative">
@@ -151,7 +151,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             </aside>
 
             {/* MAIN */}
-            <main className="w-10/12">
+            <main className="flex-1 h-screen overflow-y-auto">
                 {children}
             </main>
         </div>

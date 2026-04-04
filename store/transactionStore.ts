@@ -1,0 +1,105 @@
+import { create } from 'zustand';
+import axios from 'axios';
+
+export interface Category {
+  id: number;
+  name: string;
+  type: string;
+}
+
+export interface Transaction {
+  id: number;
+  title: string;
+  type: 'INCOME' | 'EXPENSE';
+  amount: number;
+  date: string;
+  category_id?: number | null;
+  category?: Category;
+}
+
+export interface Summary {
+  total_income: number;
+  total_expense: number;
+  total_balance: number;
+}
+
+interface TransactionState {
+  transactions: Transaction[];
+  summary: Summary;
+  isLoading: boolean;
+  error: string | null;
+  fetchTransactions: () => Promise<void>;
+  addTransaction: (data: Partial<Transaction>) => Promise<void>;
+  updateTransaction: (id: number, data: Partial<Transaction>) => Promise<void>;
+  deleteTransaction: (id: number) => Promise<void>;
+}
+
+export const useTransactionStore = create<TransactionState>((set, get) => ({
+  transactions: [],
+  summary: {
+    total_income: 0,
+    total_expense: 0,
+    total_balance: 0,
+  },
+  isLoading: false,
+  error: null,
+
+  fetchTransactions: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await axios.get('http://localhost:5000/transactions', { withCredentials: true });
+      set({
+        transactions: res.data.history,
+        summary: res.data.summary,
+        isLoading: false,
+      });
+    } catch (err: any) {
+      set({ 
+        error: err.response?.data?.error || err.response?.data?.message || err.message, 
+        isLoading: false 
+      });
+    }
+  },
+
+  addTransaction: async (data: Partial<Transaction>) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axios.post('http://localhost:5000/transactions', data, { withCredentials: true });
+      await get().fetchTransactions(); // Refetch automatically updates state and summary
+    } catch (err: any) {
+      set({ 
+        error: err.response?.data?.error || err.response?.data?.message || err.message, 
+        isLoading: false 
+      });
+      throw err;
+    }
+  },
+
+  updateTransaction: async (id: number, data: Partial<Transaction>) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axios.put(`http://localhost:5000/transactions/${id}`, data, { withCredentials: true });
+      await get().fetchTransactions();
+    } catch (err: any) {
+      set({ 
+        error: err.response?.data?.error || err.response?.data?.message || err.message, 
+        isLoading: false 
+      });
+      throw err;
+    }
+  },
+
+  deleteTransaction: async (id: number) => {
+    set({ isLoading: true, error: null });
+    try {
+      await axios.delete(`http://localhost:5000/transactions/${id}`, { withCredentials: true });
+      await get().fetchTransactions();
+    } catch (err: any) {
+      set({ 
+        error: err.response?.data?.error || err.response?.data?.message || err.message, 
+        isLoading: false 
+      });
+      throw err;
+    }
+  }
+}));

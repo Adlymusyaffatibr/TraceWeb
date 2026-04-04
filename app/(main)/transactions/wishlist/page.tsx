@@ -40,9 +40,9 @@ export default function WishlistPage() {
       {/* STATS */}
       <div className="grid grid-cols-4 gap-4 mb-6">
         {["Total", "On Going", "Not Started", "Completed"].map((item) => (
-          <div key={item} className="bg-white rounded-xl p-6 shadow-sm">
+          <div key={item} className="bg-white rounded-lg p-6 flex flex-col justify-between h-42 ">
             <p className="text-gray-400 text-sm">{item}</p>
-            <h2 className="text-3xl font-semibold mt-2">{list.length}</h2>
+            <h2 className="text-4xl font-semibold mt-2">{list.length}</h2>
           </div>
         ))}
       </div>
@@ -95,11 +95,11 @@ export default function WishlistPage() {
       )}
 
       {/* LIST */}
-      <div className="space-y-4">
+      <div className="space-y-1.5">
         {list.map((item) => (
           <div
             key={item.id}
-            className="bg-white p-4 rounded-xl shadow-sm flex items-center justify-between"
+            className="bg-white px-12 py-5 rounded-lg  flex items-center justify-between"
           >
             {/* NAME */}
             <div className="w-1/4">
@@ -108,27 +108,27 @@ export default function WishlistPage() {
 
             {/* PRIORITY */}
             <div className="w-1/6">
-              <span className="bg-red-200 text-red-600 px-3 py-1 rounded-lg text-sm">
+              <span className="bg-red-200 text-red-600 px-5 py-1.5 font-semibold rounded-lg text-xs">
                 {item.priority}
               </span>
             </div>
 
             {/* STATUS */}
             <div className="w-1/6">
-              <span className="bg-green-200 text-green-600 px-3 py-1 rounded-lg text-sm">
+              <span className="bg-green-200 text-green-600 px-5 py-1.5 font-semibold rounded-lg text-xs">
                 {item.status}
               </span>
             </div>
 
             {/* PROGRESS */}
-            <div className="w-1/3 flex items-center gap-3">
+            <div className="w-1/5 flex items-center gap-3">
               <div className="w-full bg-gray-200 h-2 rounded-full">
                 <div
                   className="bg-green-500 h-2 rounded-full"
                   style={{ width: `${item.progress}%` }}
                 />
               </div>
-              <span className="text-sm text-gray-600">
+              <span className="ml-16 text-xs text-black">
                 {item.progress}%
               </span>
             </div>

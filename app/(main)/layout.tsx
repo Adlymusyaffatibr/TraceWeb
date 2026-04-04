@@ -85,7 +85,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 >
                                     <div className="flex items-center gap-2">
                                         <Category className="size-5" />
-                                        <p className="text-sm">Transactions</p>
+                                        <p className="text-sm">Finance</p>
                                     </div>
                                     <span className="text-xs">
                                         {openTrans ? '▾' : '▸'}
@@ -97,20 +97,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                     <div className="ml-5 flex flex-col gap-1 mt-1">
 
                                         <div
-                                            onClick={() => router.push('/transactions')}
+                                            onClick={() => router.push('/Finance/transactions')}
                                             className={`text-sm px-3 py-2 rounded-md cursor-pointer transition
-                                                ${pathname === '/transactions'
+                                                ${pathname === '/Finance/transactions'
                                                     ? 'bg-[#3e3e3e]'
                                                     : 'hover:bg-[#3e3e3e]'}
                                             `}
                                         >
-                                            Dashboard
+                                            Transactions
                                         </div>
 
                                         <div
-                                            onClick={() => router.push('/transactions/wishlist')}
+                                            onClick={() => router.push('/Finance/wishlist')}
                                             className={`text-sm px-3 py-2 rounded-md cursor-pointer transition
-                                                ${pathname === '/transactions/wishlist'
+                                                ${pathname === '/Finance/wishlist'
                                                     ? 'bg-[#3e3e3e]'
                                                     : 'hover:bg-[#3e3e3e]'}
                                             `}
@@ -119,9 +119,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                         </div>
 
                                         <div
-                                            onClick={() => router.push('/transactions/history')}
+                                            onClick={() => router.push('/Finance/history')}
                                             className={`text-sm px-3 py-2 rounded-md cursor-pointer transition
-                                                ${pathname === '/transactions/history'
+                                                ${pathname === '/Finance/history'
                                                     ? 'bg-[#3e3e3e]'
                                                     : 'hover:bg-[#3e3e3e]'}
                                             `}

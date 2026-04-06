@@ -1,50 +1,106 @@
 'use client';
 
-import React, { useState } from 'react';
-
-type WishlistItem = {
-  id: number;
-  name: string;
-  progress: number;
-  status: "ON GOING" | "NOT STARTED" | "COMPLETED";
-  priority: "URGENT" | "NORMAL";
-};
-
-const initialData: WishlistItem[] = Array.from({ length: 8 }, (_, i) => ({
-  id: i,
-  name: "Blablablablabla",
-  progress: 65,
-  status: "ON GOING",
-  priority: "URGENT",
-}));
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useWishlistStore } from '@/store/wishlistStore';
+import Modal from '@/components/Modal';
+import Input from '@/components/ui/Input';
 
 export default function WishlistPage() {
-  const [list, setList] = useState(initialData);
+  const router = useRouter();
+  const { wishlists, report, fetchWishlists, fetchReport, createWishlist, isLoading } = useWishlistStore();
+  
   const [showModal, setShowModal] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [newItem, setNewItem] = useState({
-    name: "",
-    priority: "NORMAL",
+  // Filter local states (we can also do this server side, but let's just trigger a re-fetch)
+  const [filterStatus, setFilterStatus] = useState<string>('');
+  const [filterUrgency, setFilterUrgency] = useState<string>('');
+
+  const [newItem, setNewItem] = useState<{
+    title: string;
+    target_amount: string;
+    start_date: string;
+    end_date: string;
+    urgency: 'LOW' | 'MEDIUM' | 'HIGH';
+  }>({
+    title: "",
+    target_amount: "",
+    start_date: "",
+    end_date: "",
+    urgency: "MEDIUM",
   });
 
+  const formatNumeric = (val: string) => {
+    if (!val) return "";
+    const cleanNumber = val.replace(/\D/g, "");
+    if (!cleanNumber) return "";
+    return new Intl.NumberFormat("id-ID").format(Number(cleanNumber));
+  };
+
+  const parseNumeric = (val: string) => {
+    return val.replace(/\./g, "");
+  };
+
+  useEffect(() => {
+    fetchWishlists(filterStatus, filterUrgency);
+    fetchReport();
+  }, [fetchWishlists, fetchReport, filterStatus, filterUrgency]);
+
+  const handleAddSubmit = async () => {
+    if (!newItem.title || !newItem.target_amount || !newItem.start_date || !newItem.end_date) return;
+    setIsSubmitting(true);
+    try {
+      await createWishlist({
+        title: newItem.title,
+        target_amount: Number(parseNumeric(newItem.target_amount)),
+        start_date: newItem.start_date,
+        end_date: newItem.end_date,
+        urgency: newItem.urgency,
+      });
+      setShowModal(false);
+      setNewItem({ title: "", target_amount: "", start_date: "", end_date: "", urgency: "MEDIUM" });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getStatusBadgeStyle = (status: string) => {
+    if (status === 'COMPLETED') return 'bg-blue-200 text-blue-600';
+    if (status === 'ONGOING') return 'bg-green-200 text-green-600';
+    return 'bg-gray-200 text-gray-600'; // NOT_STARTED
+  };
+
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
+    <div className="p-8 bg-[#f5f5f5] min-h-screen text-gray-800 flex flex-col relative overflow-hidden">
 
       {/* HEADER */}
-      <h1 className="text-2xl font-semibold mb-1">Wishlist</h1>
-      <p className="text-gray-500 mb-6">
+      <h1 className="text-3xl font-bold mb-1">Wishlist</h1>
+      <p className="text-gray-400 text-sm mb-6">
         Traces of your saving adventure today
       </p>
 
       {/* STATS */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        {["Total", "On Going", "Not Started", "Completed"].map((item) => (
-          <div key={item} className="bg-white rounded-lg p-6 flex flex-col justify-between h-42 ">
-            <p className="text-gray-400 text-sm">{item}</p>
-            <h2 className="text-4xl font-semibold mt-2">{list.length}</h2>
-          </div>
-        ))}
+      <div className="grid grid-cols-4 gap-4 mb-8 h-56">
+        <div className="bg-white rounded-2xl p-6 flex flex-col justify-between">
+          <p className="text-gray-500 text-sm font-medium mb-1">Total</p>
+          <h2 className="text-3xl font-bold text-gray-900">{report?.total_wishlists || 0}</h2>
+        </div>
+        <div className="bg-white rounded-2xl p-6 flex flex-col justify-between">
+          <p className="text-gray-500 text-sm font-medium mb-1">On Going</p>
+          <h2 className="text-3xl font-bold text-gray-900">{report?.ongoing_wishlists || 0}</h2>
+        </div>
+        <div className="bg-white rounded-2xl p-6 flex flex-col justify-between">
+          <p className="text-gray-500 text-sm font-medium mb-1">Not Started</p>
+          <h2 className="text-3xl font-bold text-gray-900">{report?.not_started_wishlists || 0}</h2>
+        </div>
+        <div className="bg-white rounded-2xl p-6 flex flex-col justify-between">
+          <p className="text-gray-500 text-sm font-medium mb-1">Completed</p>
+          <h2 className="text-3xl font-bold text-gray-900">{report?.completed_wishlists || 0}</h2>
+        </div>
       </div>
 
       {/* ACTION */}
@@ -68,25 +124,24 @@ export default function WishlistPage() {
       {showFilter && (
         <div className="mb-4 flex gap-2">
           <button
-            onClick={() =>
-              setList(initialData.filter((i) => i.status === "ON GOING"))
-            }
-            className="px-3 py-1 bg-green-200 rounded"
+            onClick={() => setFilterStatus('ONGOING')}
+            className={`px-3 py-1 rounded transition-colors ${filterStatus === 'ONGOING' ? 'bg-green-300' : 'bg-green-200'}`}
           >
             On Going
           </button>
 
           <button
-            onClick={() =>
-              setList(initialData.filter((i) => i.priority === "URGENT"))
-            }
-            className="px-3 py-1 bg-red-200 rounded"
+            onClick={() => setFilterUrgency('HIGH')}
+            className={`px-3 py-1 rounded transition-colors ${filterUrgency === 'HIGH' ? 'bg-red-300' : 'bg-red-200'}`}
           >
             Urgent
           </button>
 
           <button
-            onClick={() => setList(initialData)}
+            onClick={() => {
+              setFilterStatus('');
+              setFilterUrgency('');
+            }}
             className="px-3 py-1 bg-gray-200 rounded"
           >
             Reset
@@ -95,107 +150,107 @@ export default function WishlistPage() {
       )}
 
       {/* LIST */}
-      <div className="space-y-1.5">
-        {list.map((item) => (
-          <div
-            key={item.id}
-            className="bg-white px-12 py-4 rounded-lg  flex items-center justify-between"
-          >
-            {/* NAME */}
-            <div className="w-1/4">
-              <p className="font-medium">{item.name}</p>
-            </div>
-
-            {/* PRIORITY */}
-            <div className="w-1/6">
-              <span className="inline-block w-28 text-center bg-red-200 text-red-600 py-1.5 font-semibold rounded-lg text-[0.65rem]">
-                {item.priority}
-              </span>
-            </div>
-
-            {/* STATUS */}
-            <div className="w-1/6">
-              <span className="inline-block w-28 text-center bg-green-200 text-green-600 py-1.5 font-semibold rounded-lg text-[0.65rem]">
-                {item.status}
-              </span>
-            </div>
-
-            {/* PROGRESS */}
-            <div className="w-1/5 flex items-center gap-3">
-              <div className="w-full bg-gray-200 h-2 rounded-full">
-                <div
-                  className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${item.progress}%` }}
-                />
+      <div className="space-y-1.5 flex-1 overflow-y-auto pr-2">
+        {isLoading && wishlists.length === 0 ? (
+          <div className="text-gray-400 p-4">Loading wishlists...</div>
+        ) : (
+          wishlists.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => router.push(`/Finance/wishlist/${item.id}`)}
+              className="bg-white px-12 py-4 rounded-lg flex items-center justify-between cursor-pointer hover:bg-gray-50 transition"
+            >
+              {/* NAME */}
+              <div className="w-1/4">
+                <p className="font-medium truncate pr-4">{item.title}</p>
               </div>
-              <span className="ml-16 text-xs text-black">
-                {item.progress}%
-              </span>
+
+              {/* PRIORITY */}
+              <div className="w-1/6">
+                <span className={`inline-block w-28 text-center py-1.5 font-semibold rounded-lg text-[0.65rem] ${
+                  item.urgency === 'HIGH' ? 'bg-red-200 text-red-600' : 
+                  item.urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-600' : 
+                  'bg-gray-200 text-gray-500'
+                }`}>
+                  {item.urgency}
+                </span>
+              </div>
+
+              {/* STATUS */}
+              <div className="w-1/6">
+                <span className={`inline-block w-28 text-center py-1.5 font-semibold rounded-lg text-[0.65rem] ${getStatusBadgeStyle(item.status)}`}>
+                  {item.status.replace('_', ' ')}
+                </span>
+              </div>
+
+              {/* PROGRESS */}
+              <div className="w-1/5 flex items-center gap-3">
+                <div className="w-full bg-gray-200 h-2 rounded-full">
+                  <div
+                    className="bg-green-500 h-2 rounded-full"
+                    style={{ width: `${Math.min(item.percentage_completed || 0, 100)}%` }}
+                  />
+                </div>
+                <span className="w-12 text-xs text-black font-semibold text-right">
+                  {Math.min(item.percentage_completed || 0, 100).toFixed(0)}%
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* MODAL ADD */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl w-80">
-            <h2 className="text-lg font-semibold mb-4">Add Wishlist</h2>
-
-            <input
-              type="text"
-              placeholder="Wishlist name"
-              className="w-full border p-2 rounded mb-3"
-              value={newItem.name}
-              onChange={(e) =>
-                setNewItem({ ...newItem, name: e.target.value })
-              }
+        <Modal
+          title="Add Wishlist"
+          closeButton={() => setShowModal(false)}
+          submitButton={handleAddSubmit}
+        >
+          <div className="flex flex-col gap-4 pb-4">
+            <Input
+              label="Title"
+              placeholder="E.g. Vacations to Bali"
+              value={newItem.title}
+              onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
             />
 
-            <select
-              className="w-full border p-2 rounded mb-4"
-              value={newItem.priority}
-              onChange={(e) =>
-                setNewItem({ ...newItem, priority: e.target.value })
-              }
-            >
-              <option value="NORMAL">Normal</option>
-              <option value="URGENT">Urgent</option>
-            </select>
+            <Input
+              label="Target Amount (Rp)"
+              placeholder="5.000.000"
+              value={newItem.target_amount}
+              onChange={(e) => setNewItem({ ...newItem, target_amount: formatNumeric(e.target.value) })}
+            />
 
-            <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-3 py-1 bg-gray-200 rounded"
+            <div className="flex gap-4">
+              <Input
+                label="Start Date"
+                type="date"
+                value={newItem.start_date}
+                onChange={(e) => setNewItem({ ...newItem, start_date: e.target.value })}
+              />
+              <Input
+                label="End Date"
+                type="date"
+                value={newItem.end_date}
+                onChange={(e) => setNewItem({ ...newItem, end_date: e.target.value })}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1 w-full">
+              <label className="text-sm font-medium text-gray-700">Urgency</label>
+              <select
+                className="w-full border rounded-md px-3 py-2 text-sm outline-none border-gray-300 focus:border-blue-500 bg-white"
+                value={newItem.urgency}
+                onChange={(e) => setNewItem({ ...newItem, urgency: e.target.value as any })}
               >
-                Cancel
-              </button>
-
-              <button
-                onClick={() => {
-                  if (!newItem.name) return;
-
-                  setList([
-                    ...list,
-                    {
-                      id: Date.now(),
-                      name: newItem.name,
-                      progress: 0,
-                      status: "NOT STARTED",
-                      priority: newItem.priority as any,
-                    },
-                  ]);
-
-                  setShowModal(false);
-                  setNewItem({ name: "", priority: "NORMAL" });
-                }}
-                className="px-3 py-1 bg-black text-white rounded"
-              >
-                Save
-              </button>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </select>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
 
     </div>

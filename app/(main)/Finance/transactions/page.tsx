@@ -29,11 +29,22 @@ const SearchIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
 );
 
+const EyeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+);
+
+const EyeOffIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12c0 0 3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+);
+
 export default function TransactionsPage() {
   const { transactions, summary, isLoading, error, fetchTransactions, addTransaction, updateTransaction, deleteTransaction } = useTransactionStore();
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [isBalanceVisible, setIsBalanceVisible] = useState(true);
+  const [isIncomeVisible, setIsIncomeVisible] = useState(true);
+  const [isExpenseVisible, setIsExpenseVisible] = useState(true);
   const ITEMS_PER_PAGE = 7;
 
   // Form State
@@ -106,6 +117,12 @@ export default function TransactionsPage() {
     if (amount === undefined || amount === null) return 'Rp 0';
     const formatted = Math.floor(amount).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     return `Rp ${formatted}`;
+  };
+
+  const getMaskedAmount = (amount: number) => {
+    if (amount === undefined || amount === null) return 'Rp *';
+    const digitsCount = Math.floor(amount).toString().length;
+    return `Rp ${'*'.repeat(digitsCount)}`;
   };
 
   const closeModal = () => {
@@ -319,18 +336,23 @@ export default function TransactionsPage() {
           {/* Card 1: Total Balance */}
           <div className="bg-white p-7 w-6/12 rounded-2xl flex-1 flex flex-col justify-between">
             <div>
-              <p className="text-gray-500 text-sm font-medium mb-1">Total Balance</p>
+              <div className="flex justify-between items-start mb-1">
+                <p className="text-gray-500 text-sm font-medium">Total Balance</p>
+                <button 
+                  onClick={() => setIsBalanceVisible(!isBalanceVisible)}
+                  className="w-7 h-7 bg-[#f3f3f3] hover:bg-[#e2e2e2] transition-colors rounded-lg flex items-center justify-center text-gray-500"
+                >
+                  {isBalanceVisible ? <EyeIcon /> : <EyeOffIcon />}
+                </button>
+              </div>
               <h2 className="text-[44px] font-bold tracking-tight text-gray-900">
-                {formatCurrency(summary.total_balance || 0)}
+                {isBalanceVisible ? formatCurrency(summary.total_balance || 0) : getMaskedAmount(summary.total_balance || 0)}
               </h2>
             </div>
             
             <div>
-              <div className="flex gap-3 mb-4">
-                <div className="w-20 h-5 bg-gray-100 rounded-lg"></div>
-                <div className="w-20 h-5 bg-gray-100 rounded-lg"></div>
-              </div>
-              
+            
+          
               <div className="inline-block bg-[#f0f9f1] px-4 py-2 rounded-lg">
                 <p className="text-[#65a36b] text-[13px] font-medium">
                   Higher than last week by <span className="font-bold">Rp. 25.000,00</span>
@@ -342,40 +364,60 @@ export default function TransactionsPage() {
           {/* Card 2: Today Income */}
           <div className="bg-white p-6 rounded-2xl w-3/12 flex flex-col justify-between">
             <div className="flex justify-between items-start">
-              <p className="text-gray-500 text-sm font-medium">Today Income</p>
-              <button 
-                onClick={() => handleOpenAdd('INCOME')}
-                className="w-7 h-7 bg-[#f3f3f3] hover:bg-[#e2e2e2] transition-colors rounded-lg flex items-center justify-center text-gray-600 text-lg font-light leading-none"
-              >
-                +
-              </button>
+              <p className="text-gray-500 text-sm font-medium">Total Income</p>
+              <div className="flex gap-2">
+                <button 
+                   onClick={() => setIsIncomeVisible(!isIncomeVisible)}
+                   className="w-7 h-7 bg-[#f3f3f3] hover:bg-[#e2e2e2] transition-colors rounded-lg flex items-center justify-center text-gray-500"
+                >
+                   {isIncomeVisible ? <EyeIcon /> : <EyeOffIcon />}
+                </button>
+                <button 
+                  onClick={() => handleOpenAdd('INCOME')}
+                  className="w-7 h-7 bg-[#f3f3f3] hover:bg-[#e2e2e2] transition-colors rounded-lg flex items-center justify-center text-gray-600 text-lg font-light leading-none"
+                >
+                  +
+                </button>
+              </div>
             </div>
             
             <div>
               <h2 className="text-[28px] font-semibold mb-3 text-gray-900">
-                {formatCurrency(summary.total_income || 0)}
+                {isIncomeVisible ? formatCurrency(summary.total_income || 0) : getMaskedAmount(summary.total_income || 0)}
               </h2>
-              <div className="w-40 h-5 bg-gray-100 rounded-lg"></div>
+              <div className="w-fit px-3 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <p className="text-gray-500 text-xs font-medium">Last Added : Rp.20.000</p>
+              </div>
             </div>
           </div>
 
           {/* Card 3: Last Expense */}
           <div className="bg-white p-6 rounded-2xl w-3/12 flex flex-col justify-between">
             <div className="flex justify-between items-start">
-              <p className="text-gray-500 text-sm font-medium">Last Expense</p>
-              <button 
-                onClick={() => handleOpenAdd('EXPENSE')}
-                className="w-7 h-7 bg-[#f3f3f3] hover:bg-[#e2e2e2] transition-colors rounded-lg flex items-center justify-center text-gray-600 text-lg font-light leading-none"
-              >
-                +
-              </button>
+              <p className="text-gray-500 text-sm font-medium">Total Expense</p>
+              <div className="flex gap-2">
+                <button 
+                   onClick={() => setIsExpenseVisible(!isExpenseVisible)}
+                   className="w-7 h-7 bg-[#f3f3f3] hover:bg-[#e2e2e2] transition-colors rounded-lg flex items-center justify-center text-gray-500"
+                >
+                   {isExpenseVisible ? <EyeIcon /> : <EyeOffIcon />}
+                </button>
+                <button 
+                  onClick={() => handleOpenAdd('EXPENSE')}
+                  className="w-7 h-7 bg-[#f3f3f3] hover:bg-[#e2e2e2] transition-colors rounded-lg flex items-center justify-center text-gray-600 text-lg font-light leading-none"
+                >
+                  +
+                </button>
+              </div>
             </div>
             
             <div>
               <h2 className="text-[28px] font-semibold mb-3 text-gray-900">
-                {formatCurrency(summary.total_expense || 0)}
+                {isExpenseVisible ? formatCurrency(summary.total_expense || 0) : getMaskedAmount(summary.total_expense || 0)}
               </h2>
-              <div className="w-40 h-5 bg-gray-100 rounded-lg"></div>
+              <div className="w-fit px-3 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+                <p className="text-gray-500 text-xs font-medium">Last Added : Rp.20.000</p>
+              </div>
             </div>
           </div>
 

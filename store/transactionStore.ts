@@ -27,12 +27,30 @@ export interface Summary {
   balance_diff_last_week: number;
 }
 
+export interface DashboardData {
+  summary: {
+    total_balance: number;
+    total_income: number;
+    total_expense: number;
+  };
+  chartData: {
+    income: number[];
+    expense: number[];
+  };
+  outgoingHistory: Transaction[];
+}
+
 interface TransactionState {
   transactions: Transaction[];
   summary: Summary;
+  historyTransactions: Transaction[];
+  historySummary: Partial<Summary>;
+  dashboardData: DashboardData | null;
   isLoading: boolean;
   error: string | null;
   fetchTransactions: (month?: number, q?: string) => Promise<void>;
+  fetchHistory: (startDate?: string, endDate?: string) => Promise<void>;
+  fetchDashboard: () => Promise<void>;
   addTransaction: (data: Partial<Transaction>) => Promise<void>;
   updateTransaction: (id: number, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: number) => Promise<void>;
@@ -49,6 +67,13 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     last_expense_amount: 0,
     balance_diff_last_week: 0
   },
+  historyTransactions: [],
+  historySummary: {
+    total_income: 0,
+    total_expense: 0,
+    total_balance: 0,
+  },
+  dashboardData: null,
   isLoading: false,
   error: null,
 
@@ -63,6 +88,43 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
       set({
         transactions: res.data.history,
         summary: res.data.summary,
+        isLoading: false,
+      });
+    } catch (err: any) {
+      set({ 
+        error: err.response?.data?.error || err.response?.data?.message || err.message, 
+        isLoading: false 
+      });
+    }
+  },
+
+  fetchHistory: async (startDate?: string, endDate?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const params = new URLSearchParams();
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+
+      const res = await axios.get(`http://localhost:5000/transactions/history?${params.toString()}`, { withCredentials: true });
+      set({
+        historyTransactions: res.data.history,
+        historySummary: res.data.summary,
+        isLoading: false,
+      });
+    } catch (err: any) {
+      set({ 
+        error: err.response?.data?.error || err.response?.data?.message || err.message, 
+        isLoading: false 
+      });
+    }
+  },
+
+  fetchDashboard: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const res = await axios.get('http://localhost:5000/transactions/dashboard', { withCredentials: true });
+      set({
+        dashboardData: res.data,
         isLoading: false,
       });
     } catch (err: any) {

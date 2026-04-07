@@ -4,6 +4,7 @@ import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useTransactionStore } from '@/store/transactionStore';
+import { useToastStore } from '@/store/toastStore';
 import Modal from '@/components/Modal';
 import Input from '@/components/ui/Input';
 import WishlistDetailSkeleton from '@/components/skeletons/WishlistDetailSkeleton';
@@ -39,6 +40,7 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
   const router = useRouter();
   const { currentWishlist, fetchWishlistById, addProgress, updateWishlist, deleteWishlist, isLoading: isWishlistLoading } = useWishlistStore();
   const { transactions, fetchTransactions, updateTransaction, deleteTransaction } = useTransactionStore();
+  const { addToast } = useToastStore();
 
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [showEditProgressModal, setShowEditProgressModal] = useState(false);
@@ -48,9 +50,13 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
   const [selectedProgress, setSelectedProgress] = useState<{ id: string, amount: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const formatNumeric = (val: string) => {
-    if (!val) return "";
-    const cleanNumber = val.replace(/\D/g, "");
+  const formatNumeric = (val: string | number) => {
+    if (val === undefined || val === null || val === "") return "";
+    const numStr = String(val);
+    if (numStr.includes('.') && !numStr.includes(',')) {
+        return new Intl.NumberFormat("id-ID").format(Math.floor(Number(numStr)));
+    }
+    const cleanNumber = numStr.replace(/\D/g, "");
     if (!cleanNumber) return "";
     return new Intl.NumberFormat("id-ID").format(Number(cleanNumber));
   };
@@ -111,11 +117,8 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount);
+    if (amount === undefined || amount === null) return 'Rp 0';
+    return `Rp ${Math.floor(amount).toLocaleString('id-ID')}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -133,9 +136,9 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
       await addProgress(id, Number(parseNumeric(progressAmount)));
       setShowProgressModal(false);
       setProgressAmount("");
-      // No need to manually fetch transactions here as store action handles it
-    } catch (err) {
-      console.error(err);
+      addToast('success', 'Progress added successfully!');
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to add progress.');
     } finally {
       setIsSubmitting(false);
     }
@@ -148,8 +151,9 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
       await useWishlistStore.getState().updateProgress(selectedProgress.id, Number(parseNumeric(selectedProgress.amount)), id);
       setShowEditProgressModal(false);
       setSelectedProgress(null);
-    } catch (err) {
-      console.error(err);
+      addToast('success', 'Progress updated successfully!');
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to update progress.');
     } finally {
       setIsSubmitting(false);
     }
@@ -166,8 +170,9 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
         urgency: editItem.urgency as "LOW" | "MEDIUM" | "HIGH"
       });
       setShowEditModal(false);
-    } catch (err) {
-      console.error(err);
+      addToast('success', 'Wishlist updated successfully!');
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to update wishlist.');
     } finally {
       setIsSubmitting(false);
     }
@@ -177,9 +182,10 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
     setIsSubmitting(true);
     try {
       await deleteWishlist(id);
+      addToast('success', 'Wishlist deleted successfully!');
       router.push('/Finance/wishlist');
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to delete wishlist.');
     } finally {
       setIsSubmitting(false);
     }
@@ -345,7 +351,7 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
               <div className="w-24 flex items-center justify-center gap-2">
                 <button 
                   onClick={() => {
-                    setSelectedProgress({ id: item.id.toString(), amount: formatNumeric(item.amount.toString()) });
+                    setSelectedProgress({ id: item.id.toString(), amount: formatNumeric(Math.floor(Number(item.amount))) });
                     setShowEditProgressModal(true);
                   }}
                   className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200 transition"

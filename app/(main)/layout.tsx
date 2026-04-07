@@ -6,6 +6,7 @@ import axios from 'axios';
 import Home from '@/components/icons/Home';
 import Category from '@/components/icons/Category';
 import Image from 'next/image';
+import ToastContainer from '@/components/ToastContainer';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const router = useRouter();
@@ -64,9 +65,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
                             {/* DASHBOARD */}
                             <div
-                                onClick={() => router.push('/dashboard')}
+                                onClick={() => router.push('/Finance')}
                                 className={`flex items-center gap-2 px-3 py-3 mr-2 rounded-md cursor-pointer transition duration-200
-                                    ${pathname === '/dashboard'
+                                    ${pathname === '/Finance'
                                         ? 'bg-[#3e3e3e]'
                                         : 'hover:bg-[#3e3e3e]'}
                                 `}
@@ -154,6 +155,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <main className="flex-1 h-screen overflow-y-auto">
                 {children}
             </main>
+
+            {/* GLOBAL TOAST NOTIFICATIONS */}
+            <ToastContainer />
         </div>
     );
 }

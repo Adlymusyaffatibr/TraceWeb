@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import Input from '@/components/ui/Input';
 import { useTransactionStore, Category } from '@/store/transactionStore';
+import { useToastStore } from '@/store/toastStore';
 import StatsSkeleton from '@/components/skeletons/StatsSkeleton';
 import TransactionItemSkeleton from '@/components/skeletons/TransactionItemSkeleton';
 import axios from 'axios';
@@ -39,6 +40,7 @@ const EyeOffIcon = () => (
 
 export default function TransactionsPage() {
   const { transactions, summary, isLoading, error, fetchTransactions, addTransaction, updateTransaction, deleteTransaction } = useTransactionStore();
+  const { addToast } = useToastStore();
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,7 +79,6 @@ export default function TransactionsPage() {
   });
   
   const [categories, setCategories] = useState<Category[]>([]);
-  const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fetch Categories for dropdown
@@ -140,6 +141,22 @@ export default function TransactionsPage() {
     return `Rp ${formatted}`;
   };
 
+  const formatNumeric = (val: string | number) => {
+    if (val === undefined || val === null || val === "") return "";
+    const numStr = String(val);
+    if (numStr.includes('.') && !numStr.includes(',')) {
+        return new Intl.NumberFormat("id-ID").format(Math.floor(Number(numStr)));
+    }
+    const cleanNumber = numStr.replace(/\D/g, "");
+    if (!cleanNumber) return "";
+    return new Intl.NumberFormat("id-ID").format(Number(cleanNumber));
+  };
+
+  const parseNumeric = (val: string) => {
+    if (!val) return "0";
+    return val.replace(/\D/g, "");
+  };
+
   const getMaskedAmount = (amount: number) => {
     if (amount === undefined || amount === null) return 'Rp *';
     const digitsCount = Math.floor(amount).toString().length;
@@ -155,7 +172,6 @@ export default function TransactionsPage() {
     setModalAction('CREATE');
     setModalType(type);
     setFormData({ title: '', amount: '', date: '', category_id: '' });
-    setFormError('');
   };
 
   const handleOpenEdit = (trx: any) => {
@@ -163,62 +179,61 @@ export default function TransactionsPage() {
     setSelectedTransaction(trx);
     setFormData({ 
       title: trx.title || '', 
-      amount: trx.amount ? String(trx.amount) : '', 
+      amount: trx.amount ? formatNumeric(Math.floor(Number(trx.amount))) : '', 
       date: trx.date || '', 
       category_id: trx.category_id ? String(trx.category_id) : '' 
     });
-    setFormError('');
   };
 
   const handleOpenInfo = (trx: any) => {
     setModalAction('INFO');
     setSelectedTransaction(trx);
-    setFormError('');
   };
 
   const handleOpenDelete = (trx: any) => {
     setModalAction('DELETE');
     setSelectedTransaction(trx);
-    setFormError('');
   };
 
   const handleSubmit = async () => {
-    setFormError('');
     setIsSubmitting(true);
     
     try {
       if (modalAction === 'CREATE') {
         if (!formData.title || !formData.amount || !formData.date) {
-            setFormError('Please fill in title, amount, and date.');
+            addToast('warning', 'Please fill in title, amount, and date.');
             setIsSubmitting(false);
             return;
         }
         await addTransaction({
           title: formData.title,
-          amount: Number(formData.amount),
+          amount: Number(parseNumeric(formData.amount)),
           type: modalType,
           date: formData.date,
           category_id: formData.category_id ? Number(formData.category_id) : undefined
         });
+        addToast('success', 'Transaction added successfully!');
       } else if (modalAction === 'EDIT' && selectedTransaction) {
         if (!formData.title || !formData.amount || !formData.date) {
-            setFormError('Please fill in title, amount, and date.');
+            addToast('warning', 'Please fill in title, amount, and date.');
             setIsSubmitting(false);
             return;
         }
         await updateTransaction(selectedTransaction.id, {
           title: formData.title,
-          amount: Number(formData.amount),
+          amount: Number(parseNumeric(formData.amount)),
           date: formData.date,
           category_id: formData.category_id ? Number(formData.category_id) : undefined
         });
+        addToast('success', 'Transaction updated successfully!');
       } else if (modalAction === 'DELETE' && selectedTransaction) {
         await deleteTransaction(selectedTransaction.id);
+        addToast('success', 'Transaction deleted successfully!');
       }
       
       closeModal();
     } catch (err: any) {
-      setFormError(err.message || 'Action failed');
+      addToast('error', err.message || 'Action failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -240,16 +255,10 @@ export default function TransactionsPage() {
           submitButton={modalAction === 'INFO' ? undefined : handleSubmit}
           resetButton={modalAction === 'CREATE' || modalAction === 'EDIT' ? () => {
             setFormData({ title: '', amount: '', date: '', category_id: '' });
-            setFormError('');
           } : undefined}
         >
           {modalAction === 'DELETE' ? (
             <div className="flex flex-col gap-4 pb-4 px-2">
-              {formError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-sm relative">
-                  {formError}
-                </div>
-              )}
               <p className="text-gray-700">
                 Are you sure you want to delete the transaction <span className="font-semibold text-black">"{selectedTransaction?.title}"</span>? This action cannot be undone.
               </p>
@@ -296,11 +305,6 @@ export default function TransactionsPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-4 pb-4">
-              {formError && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-sm relative">
-                  {formError}
-                </div>
-              )}
               
               <Input 
                 label="Title" 
@@ -311,10 +315,10 @@ export default function TransactionsPage() {
               
               <Input 
                 label="Amount (Rp)" 
-                type="number"
-                placeholder="e.g. 50000"
+                type="text"
+                placeholder="e.g. 50.000"
                 value={formData.amount}
-                onChange={(e) => setFormData({...formData, amount: e.target.value})}
+                onChange={(e) => setFormData({...formData, amount: formatNumeric(e.target.value)})}
               />
               
               <Input 
@@ -352,7 +356,7 @@ export default function TransactionsPage() {
       {isLoading ? (
         <StatsSkeleton />
       ) : (
-        <div className="flex gap-4 mb-8 h-56">
+        <div className="flex gap-4 mb-6 h-56">
 
           {/* Card 1: Total Balance */}
           <div className="bg-white p-7 w-6/12 rounded-2xl flex-1 flex flex-col justify-between">

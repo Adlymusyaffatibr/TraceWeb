@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { useToastStore } from '@/store/toastStore';
 import Modal from '@/components/Modal';
 import Input from '@/components/ui/Input';
 import WishlistItemSkeleton from '@/components/skeletons/WishlistItemSkeleton';
@@ -10,6 +11,7 @@ import WishlistItemSkeleton from '@/components/skeletons/WishlistItemSkeleton';
 export default function WishlistPage() {
   const router = useRouter();
   const { wishlists, report, fetchWishlists, fetchReport, createWishlist, isLoading } = useWishlistStore();
+  const { addToast } = useToastStore();
   
   const [showModal, setShowModal] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
@@ -39,9 +41,14 @@ export default function WishlistPage() {
     urgency: "MEDIUM",
   });
 
-  const formatNumeric = (val: string) => {
-    if (!val) return "";
-    const cleanNumber = val.replace(/\D/g, "");
+  const formatNumeric = (val: string | number) => {
+    if (val === undefined || val === null || val === "") return "";
+    const numStr = String(val);
+    // If it contains a decimal point and it's likely a DB decimal string (e.g. "20000.00")
+    if (numStr.includes('.') && !numStr.includes(',')) {
+        return new Intl.NumberFormat("id-ID").format(Math.floor(Number(numStr)));
+    }
+    const cleanNumber = numStr.replace(/\D/g, "");
     if (!cleanNumber) return "";
     return new Intl.NumberFormat("id-ID").format(Number(cleanNumber));
   };
@@ -60,7 +67,10 @@ export default function WishlistPage() {
   }, [fetchWishlists, fetchReport, filterStatus, filterUrgency, searchQuery, activeSort]);
 
   const handleAddSubmit = async () => {
-    if (!newItem.title || !newItem.target_amount || !newItem.start_date || !newItem.end_date) return;
+    if (!newItem.title || !newItem.target_amount || !newItem.start_date || !newItem.end_date) {
+      addToast('warning', 'Please fill in all fields before submitting.');
+      return;
+    }
     setIsSubmitting(true);
     try {
       await createWishlist({
@@ -72,8 +82,9 @@ export default function WishlistPage() {
       });
       setShowModal(false);
       setNewItem({ title: "", target_amount: "", start_date: "", end_date: "", urgency: "MEDIUM" });
-    } catch (err) {
-      console.error(err);
+      addToast('success', 'Wishlist item created successfully!');
+    } catch (err: any) {
+      addToast('error', err.message || 'Failed to create wishlist. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -95,7 +106,7 @@ export default function WishlistPage() {
       </p>
 
       {/* STATS */}
-      <div className="grid grid-cols-4 gap-4 mb-8 h-56">
+      <div className="grid grid-cols-4 gap-4 mb-6 h-57">
         <div className="bg-white rounded-2xl p-6 flex flex-col justify-between">
           <p className="text-gray-500 text-sm font-medium mb-1">Total</p>
           <h2 className="text-3xl font-bold text-gray-900">{report?.total_wishlists || 0}</h2>
@@ -115,7 +126,7 @@ export default function WishlistPage() {
       </div>
 
       {/* ACTION */}
-      <div className="flex items-center justify-between  gap-3 mb-8">
+      <div className="flex items-center justify-between  gap-3 mb-6">
         <div>
         <button
           onClick={() => setShowModal(true)}
@@ -196,7 +207,7 @@ export default function WishlistPage() {
 
 
       {/* LIST */}
-      <div className="space-y-1.5 flex-1 overflow-y-auto pr-2 pb-4">
+      <div className="space-y-3 flex-1 overflow-y-auto pr-2 pb-4">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <WishlistItemSkeleton key={i} />
@@ -208,7 +219,7 @@ export default function WishlistPage() {
             <div
               key={item.id}
               onClick={() => router.push(`/Finance/wishlist/${item.id}`)}
-              className="bg-white px-12 py-5 rounded-xl flex items-center justify-between cursor-pointer hover:bg-gray-50 transition"
+              className="bg-white px-12 py-5 rounded-xl shadow flex items-center justify-between cursor-pointer hover:bg-gray-50 transition"
             >
               {/* NAME */}
               <div className="w-1/4">

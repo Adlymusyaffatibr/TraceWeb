@@ -1,3 +1,4 @@
+import { connect } from 'http2';
 import { NextResponse } from 'next/server';
 
 export function middleware(request) {
@@ -14,15 +15,41 @@ export function middleware(request) {
   // Daftar rute khusus orang yang BELUM login
   const isAuthRoute = url.startsWith('/login') || url.startsWith('/otp');
 
+  if(request.nextUrl.pathname.startsWith('/admin')) {
+    if ( role !== 'admin'){
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
+
   // LOGIC 1: Belum login, tapi maksa masuk Dashboard -> Tendang ke Login
   if (isProtectedRoute && !sessionCookie) {
     return NextResponse.redirect(new URL('/login?mode=signin', request.url));
   }
 
-  // LOGIC 2: Udah login, tapi iseng buka halaman Login/Register -> Tendang ke Dashboard
-  if (isAuthRoute && sessionCookie) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
+ const sid = request.cookies.get('connect.sid')?.value
+
+  //  if (!sid) {
+  //   return NextResponse.redirect(new URL('/login?mode=signin', request.url))
+  // }
+
+  // try {
+  //   const res = await fetch('/', {
+  //     headers: {
+  //       Cookie: `connect.sid=${sid}`,
+  //     },
+  //   })
+
+  //   if (!res.ok) {
+  //     return NextResponse.redirect(new URL('/login?mode=signin', request.url))
+  //   }
+  // } catch (err) {
+  //   return NextResponse.redirect(new URL('/login?mode=signin', request.url))
+  // }
+
+  // // LOGIC 2: Udah login, tapi iseng buka halaman Login/Register -> Tendang ke Dashboard
+  // if (isAuthRoute && sessionCookie) {
+  //   return NextResponse.redirect(new URL('/Finance', request.url));
+  // }
 
   // Kalau semua aman, silakan lewat!
   return NextResponse.next();

@@ -43,11 +43,10 @@ export default function WishlistPage() {
 
   const formatNumeric = (val: string | number) => {
     if (val === undefined || val === null || val === "") return "";
-    const numStr = String(val);
-    // If it contains a decimal point and it's likely a DB decimal string (e.g. "20000.00")
-    if (numStr.includes('.') && !numStr.includes(',')) {
-        return new Intl.NumberFormat("id-ID").format(Math.floor(Number(numStr)));
+    if (typeof val === 'number') {
+      return new Intl.NumberFormat("id-ID").format(Math.floor(val));
     }
+    const numStr = String(val);
     const cleanNumber = numStr.replace(/\D/g, "");
     if (!cleanNumber) return "";
     return new Intl.NumberFormat("id-ID").format(Number(cleanNumber));

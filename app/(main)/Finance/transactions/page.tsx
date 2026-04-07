@@ -75,6 +75,7 @@ export default function TransactionsPage() {
     title: '',
     amount: '',
     date: '',
+    description: '',
     category_id: ''
   });
   
@@ -143,10 +144,10 @@ export default function TransactionsPage() {
 
   const formatNumeric = (val: string | number) => {
     if (val === undefined || val === null || val === "") return "";
-    const numStr = String(val);
-    if (numStr.includes('.') && !numStr.includes(',')) {
-        return new Intl.NumberFormat("id-ID").format(Math.floor(Number(numStr)));
+    if (typeof val === 'number') {
+      return new Intl.NumberFormat("id-ID").format(Math.floor(val));
     }
+    const numStr = String(val);
     const cleanNumber = numStr.replace(/\D/g, "");
     if (!cleanNumber) return "";
     return new Intl.NumberFormat("id-ID").format(Number(cleanNumber));
@@ -171,7 +172,7 @@ export default function TransactionsPage() {
   const handleOpenAdd = (type: 'INCOME' | 'EXPENSE') => {
     setModalAction('CREATE');
     setModalType(type);
-    setFormData({ title: '', amount: '', date: '', category_id: '' });
+    setFormData({ title: '', amount: '', date: '', description: '', category_id: '' });
   };
 
   const handleOpenEdit = (trx: any) => {
@@ -181,6 +182,7 @@ export default function TransactionsPage() {
       title: trx.title || '', 
       amount: trx.amount ? formatNumeric(Math.floor(Number(trx.amount))) : '', 
       date: trx.date || '', 
+      description: trx.description || '',
       category_id: trx.category_id ? String(trx.category_id) : '' 
     });
   };
@@ -210,7 +212,8 @@ export default function TransactionsPage() {
           amount: Number(parseNumeric(formData.amount)),
           type: modalType,
           date: formData.date,
-          category_id: formData.category_id ? Number(formData.category_id) : undefined
+          description: formData.description,
+          category_id: formData.category_id ? formData.category_id : undefined
         });
         addToast('success', 'Transaction added successfully!');
       } else if (modalAction === 'EDIT' && selectedTransaction) {
@@ -223,7 +226,8 @@ export default function TransactionsPage() {
           title: formData.title,
           amount: Number(parseNumeric(formData.amount)),
           date: formData.date,
-          category_id: formData.category_id ? Number(formData.category_id) : undefined
+          description: formData.description,
+          category_id: formData.category_id ? formData.category_id : undefined
         });
         addToast('success', 'Transaction updated successfully!');
       } else if (modalAction === 'DELETE' && selectedTransaction) {
@@ -254,7 +258,7 @@ export default function TransactionsPage() {
           closeButton={closeModal}
           submitButton={modalAction === 'INFO' ? undefined : handleSubmit}
           resetButton={modalAction === 'CREATE' || modalAction === 'EDIT' ? () => {
-            setFormData({ title: '', amount: '', date: '', category_id: '' });
+            setFormData({ title: '', amount: '', date: '', description: '', category_id: '' });
           } : undefined}
         >
           {modalAction === 'DELETE' ? (
@@ -296,9 +300,13 @@ export default function TransactionsPage() {
                 </div>
 
                 <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                  <span className="text-sm font-medium text-gray-500">Category</span>
+                  <span className="text-sm font-medium text-gray-500">
+                    {selectedTransaction?.type === 'INCOME' ? 'Description' : 'Category'}
+                  </span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {selectedTransaction?.category?.name || '-'}
+                    {selectedTransaction?.type === 'INCOME' ? 
+                      (selectedTransaction?.description || '-') : 
+                      (selectedTransaction?.category?.name || '-')}
                   </span>
                 </div>
               </div>
@@ -328,19 +336,28 @@ export default function TransactionsPage() {
                 onChange={(e) => setFormData({...formData, date: e.target.value})}
               />
 
-              <div className="flex flex-col gap-1 w-full">
-                <label className="text-sm font-medium text-gray-700">Category</label>
-                <select 
-                  className="w-full border rounded-md px-3 py-2 text-sm outline-none border-gray-300 focus:border-blue-500 bg-white"
-                  value={formData.category_id}
-                  onChange={(e) => setFormData({...formData, category_id: e.target.value})}
-                >
-                  <option value="">Select Category (Optional)</option>
-                  {categories.filter(c => c.type === (modalAction === 'EDIT' && selectedTransaction ? selectedTransaction.type : modalType)).map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
+              {(modalAction === 'EDIT' && selectedTransaction ? selectedTransaction.type : modalType) === 'INCOME' ? (
+                <Input 
+                  label="Description" 
+                  placeholder="e.g. Sold item, Bonus..."
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                />
+              ) : (
+                <div className="flex flex-col gap-1 w-full">
+                  <label className="text-sm font-medium text-gray-700">Category</label>
+                  <select 
+                    className="w-full border rounded-md px-3 py-2 text-sm outline-none border-gray-300 focus:border-blue-500 bg-white"
+                    value={formData.category_id}
+                    onChange={(e) => setFormData({...formData, category_id: e.target.value})}
+                  >
+                    <option value="">Select Category (Optional)</option>
+                    {categories.filter(c => c.type === 'EXPENSE').map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           )}
         </Modal>

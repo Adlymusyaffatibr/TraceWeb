@@ -189,7 +189,7 @@ export default function HistoryPage() {
                   { label: 'Title', value: selectedTransaction.title },
                   { label: 'Date', value: formatDate(selectedTransaction.date) },
                   { label: 'Amount', value: formatCurrency(selectedTransaction.amount) },
-                  { label: 'Category', value: selectedTransaction.category?.name || 'Uncategorized' },
+                  { label: selectedTransaction.type === 'INCOME' ? 'Description' : 'Category', value: selectedTransaction.type === 'INCOME' ? (selectedTransaction.description || '-') : (selectedTransaction.category?.name || 'Uncategorized') },
                   { label: 'Type', value: selectedTransaction.type },
                 ].map((row, i) => (
                   <div key={i} className="flex items-center justify-between py-4 border-b border-gray-50 last:border-0 hover:bg-gray-50/50 px-2 rounded-lg transition-colors">

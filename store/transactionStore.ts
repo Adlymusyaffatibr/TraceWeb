@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import axios from 'axios';
 
 export interface Category {
-  id: number;
+  id: string;
   name: string;
   type: string;
 }
@@ -13,7 +13,8 @@ export interface Transaction {
   type: 'INCOME' | 'EXPENSE';
   amount: number;
   date: string;
-  category_id?: number | null;
+  description?: string;
+  category_id?: string | null;
   category?: Category;
 }
 

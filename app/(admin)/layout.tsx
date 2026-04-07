@@ -55,7 +55,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                             <div className='mt-5'>
                                 <h1 className='font-semibold text-[#AAAFB2] text-sm ml-2 mb-3'>MENU</h1>
                                 <div className='flex flex-col gap-1'>
-                                <div className='flex items-center gap-2 hover:bg-[#3e3e3e] transition duration-300 rounded-md px-3 mr-2 py-3 cursor-pointer'>
+                                <div className='flex items-center gap-2 hover:bg-[#3e3e3e] transition duration-300 rounded-md px-3 mr-2 py-3 cursor-pointer'
+                                onClick={() => router.push('/category')}
+                                >
                                     <Home className='size-5' />
                                     <p className='text-sm text-[#AAAFB2]'>Dashboard</p>
                                 </div>

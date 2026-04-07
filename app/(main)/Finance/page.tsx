@@ -183,7 +183,7 @@ export default function DashboardPage() {
       ) : (
         <div className="flex gap-4 mb-6 h-[220px]">
           {/* Card 1: Total Balance */}
-          <div className="bg-[#4a4a4a] text-white p-7 w-[45%] rounded-[24px] flex flex-col justify-between shadow-sm relative overflow-hidden">
+          <div className=" text-white bg-radial-[at_15%_1%] from-black/90 to-black/60  from-25%it  p-7 w-6/12 rounded-[24px] flex flex-col justify-between shadow-sm relative overflow-hidden">
              <div>
                <p className="text-gray-400 font-medium text-sm mb-2 flex items-center gap-2">
                  Total Balance
@@ -207,7 +207,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Cards 2 & 3 Container */}
-          <div className="flex gap-4 w-[55%]">
+          <div className="flex gap-4 w-6/12">
             {/* Total Income */}
             <div className="bg-white p-7 rounded-[24px] flex-1 flex flex-col justify-between shadow-sm">
               <div className="flex justify-between items-start">

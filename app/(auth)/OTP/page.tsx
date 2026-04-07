@@ -69,10 +69,13 @@ export default function VerifyCodePage() {
       });
 
       console.log("Sukses Verifikasi:", response.data);
-      alert("Akun berhasil diverifikasi! Silakan Sign In.");
-      
-      // Kalau sukses, arahin ke halaman login mode Sign In
-      router.push("/login?mode=signin");
+      const user = response.data.user;
+
+      if (user.role === "admin") {
+        router.push("/category");
+      } else {
+        router.push("/Finance");
+      }
 
     } catch (err: any) {
       if (err.response && err.response.data) {

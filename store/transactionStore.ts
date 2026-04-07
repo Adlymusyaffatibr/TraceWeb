@@ -21,6 +21,10 @@ export interface Summary {
   total_income: number;
   total_expense: number;
   total_balance: number;
+  global_balance: number;
+  last_income_amount: number;
+  last_expense_amount: number;
+  balance_diff_last_week: number;
 }
 
 interface TransactionState {
@@ -28,7 +32,7 @@ interface TransactionState {
   summary: Summary;
   isLoading: boolean;
   error: string | null;
-  fetchTransactions: () => Promise<void>;
+  fetchTransactions: (month?: number, q?: string) => Promise<void>;
   addTransaction: (data: Partial<Transaction>) => Promise<void>;
   updateTransaction: (id: number, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: number) => Promise<void>;
@@ -40,14 +44,22 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     total_income: 0,
     total_expense: 0,
     total_balance: 0,
+    global_balance: 0,
+    last_income_amount: 0,
+    last_expense_amount: 0,
+    balance_diff_last_week: 0
   },
   isLoading: false,
   error: null,
 
-  fetchTransactions: async () => {
+  fetchTransactions: async (month?: number, q?: string) => {
     set({ isLoading: true, error: null });
     try {
-      const res = await axios.get('http://localhost:5000/transactions', { withCredentials: true });
+      const params = new URLSearchParams();
+      if (month) params.append('month', month.toString());
+      if (q) params.append('q', q);
+
+      const res = await axios.get(`http://localhost:5000/transactions?${params.toString()}`, { withCredentials: true });
       set({
         transactions: res.data.history,
         summary: res.data.summary,
@@ -65,7 +77,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await axios.post('http://localhost:5000/transactions', data, { withCredentials: true });
-      await get().fetchTransactions(); // Refetch automatically updates state and summary
+      await get().fetchTransactions();
     } catch (err: any) {
       set({ 
         error: err.response?.data?.error || err.response?.data?.message || err.message, 

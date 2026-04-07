@@ -42,10 +42,27 @@ export default function TransactionsPage() {
 
   const [activeTab, setActiveTab] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState<number | undefined>(undefined);
+  const [searchQuery, setSearchQuery] = useState('');
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [isIncomeVisible, setIsIncomeVisible] = useState(true);
   const [isExpenseVisible, setIsExpenseVisible] = useState(true);
   const ITEMS_PER_PAGE = 7;
+
+  const MONTHS = [
+    { value: 1, label: 'Jan' },
+    { value: 2, label: 'Feb' },
+    { value: 3, label: 'Mar' },
+    { value: 4, label: 'Apr' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'Jun' },
+    { value: 7, label: 'Jul' },
+    { value: 8, label: 'Aug' },
+    { value: 9, label: 'Sep' },
+    { value: 10, label: 'Oct' },
+    { value: 11, label: 'Nov' },
+    { value: 12, label: 'Dec' },
+  ];
 
   // Form State
   const [modalAction, setModalAction] = useState<'CREATE' | 'EDIT' | 'INFO' | 'DELETE' | null>(null);
@@ -76,15 +93,19 @@ export default function TransactionsPage() {
     fetchCategories();
   }, []);
 
-  // Fetch Transactions on mount
+  // Fetch Transactions on mount or when month/search changes (debounced)
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchTransactions(selectedMonth, searchQuery);
+    }, 400);
 
-  // Reset page when tab changes
+    return () => clearTimeout(delayDebounceFn);
+  }, [fetchTransactions, selectedMonth, searchQuery]);
+
+  // Reset page when tab or search changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab]);
+  }, [activeTab, searchQuery]);
 
   // Derived state for filtering and pagination
   const filteredData = activeTab === 'ALL' 
@@ -346,16 +367,16 @@ export default function TransactionsPage() {
                 </button>
               </div>
               <h2 className="text-[44px] font-bold tracking-tight text-gray-900">
-                {isBalanceVisible ? formatCurrency(summary.total_balance || 0) : getMaskedAmount(summary.total_balance || 0)}
+                {isBalanceVisible ? formatCurrency(summary.global_balance || 0) : getMaskedAmount(summary.global_balance || 0)}
               </h2>
             </div>
             
             <div>
             
           
-              <div className="inline-block bg-[#f0f9f1] px-4 py-2 rounded-lg">
-                <p className="text-[#65a36b] text-[13px] font-medium">
-                  Higher than last week by <span className="font-bold">Rp. 25.000,00</span>
+              <div className={`inline-block ${summary.balance_diff_last_week >= 0 ? 'bg-[#f0f9f1]' : 'bg-[#fff1f2]'} px-4 py-2 rounded-lg`}>
+                <p className={`${summary.balance_diff_last_week >= 0 ? 'text-[#65a36b]' : 'text-[#e11d48]'} text-[13px] font-medium`}>
+                  {summary.balance_diff_last_week >= 0 ? 'Higher' : 'Lower'} than last week by <span className="font-bold">{formatCurrency(Math.abs(summary.balance_diff_last_week))}</span>
                 </p>
               </div>
             </div>
@@ -386,7 +407,7 @@ export default function TransactionsPage() {
                 {isIncomeVisible ? formatCurrency(summary.total_income || 0) : getMaskedAmount(summary.total_income || 0)}
               </h2>
               <div className="w-fit px-3 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500 text-xs font-medium">Last Added : Rp.20.000</p>
+                <p className="text-gray-500 text-xs font-medium">Last Added : {formatCurrency(summary.last_income_amount || 0)}</p>
               </div>
             </div>
           </div>
@@ -416,7 +437,7 @@ export default function TransactionsPage() {
                 {isExpenseVisible ? formatCurrency(summary.total_expense || 0) : getMaskedAmount(summary.total_expense || 0)}
               </h2>
               <div className="w-fit px-3 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500 text-xs font-medium">Last Added : Rp.20.000</p>
+                <p className="text-gray-500 text-xs font-medium">Last Added : {formatCurrency(summary.last_expense_amount || 0)}</p>
               </div>
             </div>
           </div>
@@ -454,9 +475,38 @@ export default function TransactionsPage() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <span className="text-[13px] text-gray-400 font-medium">Select Month</span>
-            <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl cursor-pointer text-sm transition hover:bg-gray-50">
-              <span className="text-gray-400"><CalendarIcon /></span>
-              <span className="font-medium text-gray-500">Apr</span>
+            <div className="relative group">
+              <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl cursor-pointer text-sm transition hover:bg-gray-50">
+                <span className="text-gray-400"><CalendarIcon /></span>
+                <span className="font-medium text-gray-500">
+                  {selectedMonth ? MONTHS.find(m => m.value === selectedMonth)?.label : 'All Time'}
+                </span>
+              </div>
+              
+              {/* Month Dropdown */}
+              <div className="absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 py-2 w-40 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <button 
+                  onClick={() => setSelectedMonth(undefined)}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 text-gray-600 font-medium"
+                >
+                  All Time
+                </button>
+                <div className="grid grid-cols-2 gap-1 p-2">
+                  {MONTHS.map(m => (
+                    <button
+                      key={m.value}
+                      onClick={() => setSelectedMonth(m.value)}
+                      className={`px-3 py-1.5 text-center text-xs rounded-lg transition-colors
+                        ${selectedMonth === m.value 
+                          ? 'bg-gray-800 text-white' 
+                          : 'bg-gray-50 text-gray-600 hover:bg-gray-200'}
+                      `}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -465,6 +515,8 @@ export default function TransactionsPage() {
             <input
               type="text"
               placeholder="Search anything..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent outline-none w-full text-sm text-gray-600 placeholder-gray-300 font-medium"
             />
           </div>
@@ -473,18 +525,33 @@ export default function TransactionsPage() {
       </div>
 
       {/* LIST */}
-      <div className="space-y-3 flex-1 overflow-y-auto pr-2">
+      <div className="space-y-3 flex-1 overflow-y-auto pr-2 pb-4">
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-center text-sm mb-4">
+             Error: {error}
+          </div>
+        )}
+        
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <TransactionItemSkeleton key={i} />
           ))
         ) : paginatedData.length === 0 ? (
-            <div className="bg-white px-8 py-5 rounded-2xl flex justify-center text-gray-400">No transactions found.</div>
+            <div className="bg-white px-8 py-12 rounded-2xl flex flex-col items-center justify-center text-gray-400 gap-2">
+              <span className="text-3xl">🔍</span>
+              <p className="font-medium text-sm">No transactions found match your search.</p>
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="text-blue-500 text-xs font-semibold hover:underline mt-2"
+              >
+                Clear search
+              </button>
+            </div>
         ) : (
           paginatedData.map((item) => (
             <div
               key={item.id}
-              className="bg-white px-8 py-5 rounded-2xl flex items-center justify-between transition hover:bg-gray-50 cursor-default"
+              className="bg-white px-8 py-5 rounded-2xl flex items-center justify-between transition hover:bg-gray-50 cursor-default shadow-sm border border-transparent hover:border-gray-100"
             >
               {/* Description */}
               <div className="w-1/4 font-semibold text-[13px] text-black">

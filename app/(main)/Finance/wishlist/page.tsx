@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useWishlistStore } from '@/store/wishlistStore';
 import Modal from '@/components/Modal';
 import Input from '@/components/ui/Input';
+import WishlistItemSkeleton from '@/components/skeletons/WishlistItemSkeleton';
 
 export default function WishlistPage() {
   const router = useRouter();
@@ -14,9 +15,15 @@ export default function WishlistPage() {
   const [showFilter, setShowFilter] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Filter local states (we can also do this server side, but let's just trigger a re-fetch)
+  // Filter local states
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterUrgency, setFilterUrgency] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSort, setActiveSort] = useState<string[]>([]); // ['URGENCY', 'STATUS']
+
+  const CheckIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+  );
 
   const [newItem, setNewItem] = useState<{
     title: string;
@@ -44,9 +51,13 @@ export default function WishlistPage() {
   };
 
   useEffect(() => {
-    fetchWishlists(filterStatus, filterUrgency);
-    fetchReport();
-  }, [fetchWishlists, fetchReport, filterStatus, filterUrgency]);
+    const delayDebounceFn = setTimeout(() => {
+      fetchWishlists(filterStatus || undefined, filterUrgency || undefined, searchQuery || undefined, activeSort.join(','));
+      fetchReport();
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [fetchWishlists, fetchReport, filterStatus, filterUrgency, searchQuery, activeSort]);
 
   const handleAddSubmit = async () => {
     if (!newItem.title || !newItem.target_amount || !newItem.start_date || !newItem.end_date) return;
@@ -104,73 +115,112 @@ export default function WishlistPage() {
       </div>
 
       {/* ACTION */}
-      <div className="flex justify-end gap-3 mb-4">
+      <div className="flex items-center justify-between  gap-3 mb-8">
+        <div>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-gray-200 px-4 py-2 rounded-lg"
+          className="bg-white text-sm px-6 font-medium hover:bg-gray-200 transition duration-300 cursor-pointer py-2.5 rounded-xl text-black/70"
         >
           + Add Wishlist
         </button>
+        </div>
 
-        <button
-          onClick={() => setShowFilter(!showFilter)}
-          className="bg-gray-200 px-4 py-2 rounded-lg"
-        >
-          + Filter
-        </button>
+        <div className='flex items-center gap-3'>
+          <div className="relative group">
+            <button
+              onClick={() => setShowFilter(!showFilter)}
+              className={`bg-white hover:bg-gray-200 transition duration-300 cursor-pointer text-black/70 px-8 text-sm font-medium py-2.5 rounded-xl flex items-center gap-2 ${showFilter ? 'ring-2 ring-gray-200' : ''}`}
+            >
+              Filter By
+            </button>
+            
+            {/* Filter Tooltip */}
+            <div className={`absolute top-full right-0 mt-2 bg-white rounded-xl shadow-xl border border-gray-100 py-1.5 w-44 z-50 transition-all duration-200 ${showFilter ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+              
+              {/* Urgency Section */}
+              <div className="px-4 py-1.5 text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 mb-1">Urgency</div>
+              {['HIGH', 'MEDIUM', 'LOW'].map(u => (
+                <button 
+                  key={u}
+                  onClick={() => setFilterUrgency(filterUrgency === u ? '' : u)}
+                  className="w-full px-4 py-1.5 text-left text-xs hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between capitalize"
+                >
+                  {u.toLowerCase()}
+                  {filterUrgency === u && <span className="text-blue-600 scale-75"><CheckIcon /></span>}
+                </button>
+              ))}
+
+              {/* Status Section */}
+              <div className="px-4 py-1.5 text-[9px] font-bold text-gray-400 uppercase tracking-widest border-b border-gray-50 mt-1 mb-1">Status</div>
+              {['COMPLETED', 'ONGOING', 'NOT_STARTED'].map(s => (
+                <button 
+                  key={s}
+                  onClick={() => setFilterStatus(filterStatus === s ? '' : s)}
+                  className="w-full px-4 py-1.5 text-left text-xs hover:bg-gray-50 text-gray-700 font-medium flex items-center justify-between"
+                >
+                  {s.replace('_', ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
+                  {filterStatus === s && <span className="text-blue-600 scale-75"><CheckIcon /></span>}
+                </button>
+              ))}
+
+              <div className="border-t border-gray-50 mt-1 pt-1">
+                <button 
+                  onClick={() => {
+                    setFilterUrgency('');
+                    setFilterStatus('');
+                    setShowFilter(false);
+                  }}
+                  className="w-full px-4 py-1.5 text-left text-[10px] text-red-500 hover:bg-red-50 font-medium"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center bg-white px-4 py-2.5 rounded-xl w-[260px]">
+            <span className="text-gray-400 mr-2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </span>
+            <input
+              type="text"
+              placeholder="Search anything..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent outline-none w-full text-sm text-gray-600 placeholder-gray-300 font-medium"
+            />
+          </div>
+        </div>
       </div>
 
-      {/* FILTER */}
-      {showFilter && (
-        <div className="mb-4 flex gap-2">
-          <button
-            onClick={() => setFilterStatus('ONGOING')}
-            className={`px-3 py-1 rounded transition-colors ${filterStatus === 'ONGOING' ? 'bg-green-300' : 'bg-green-200'}`}
-          >
-            On Going
-          </button>
 
-          <button
-            onClick={() => setFilterUrgency('HIGH')}
-            className={`px-3 py-1 rounded transition-colors ${filterUrgency === 'HIGH' ? 'bg-red-300' : 'bg-red-200'}`}
-          >
-            Urgent
-          </button>
-
-          <button
-            onClick={() => {
-              setFilterStatus('');
-              setFilterUrgency('');
-            }}
-            className="px-3 py-1 bg-gray-200 rounded"
-          >
-            Reset
-          </button>
-        </div>
-      )}
 
       {/* LIST */}
-      <div className="space-y-1.5 flex-1 overflow-y-auto pr-2">
-        {isLoading && wishlists.length === 0 ? (
-          <div className="text-gray-400 p-4">Loading wishlists...</div>
+      <div className="space-y-1.5 flex-1 overflow-y-auto pr-2 pb-4">
+        {isLoading ? (
+          Array.from({ length: 5 }).map((_, i) => (
+            <WishlistItemSkeleton key={i} />
+          ))
+        ) : wishlists.length === 0 ? (
+          <div className="text-gray-400 p-12 text-center bg-white rounded-xl">No wishlists found.</div>
         ) : (
           wishlists.map((item) => (
             <div
               key={item.id}
               onClick={() => router.push(`/Finance/wishlist/${item.id}`)}
-              className="bg-white px-12 py-4 rounded-lg flex items-center justify-between cursor-pointer hover:bg-gray-50 transition"
+              className="bg-white px-12 py-5 rounded-xl flex items-center justify-between cursor-pointer hover:bg-gray-50 transition"
             >
               {/* NAME */}
               <div className="w-1/4">
-                <p className="font-medium truncate pr-4">{item.title}</p>
+                <p className="font-semibold text-gray-900 truncate pr-4">{item.title}</p>
               </div>
 
               {/* PRIORITY */}
               <div className="w-1/6">
-                <span className={`inline-block w-28 text-center py-1.5 font-semibold rounded-lg text-[0.65rem] ${
-                  item.urgency === 'HIGH' ? 'bg-red-200 text-red-600' : 
+                <span className={`inline-block w-28 text-center py-1.5 font-bold rounded-lg text-[10px] tracking-widest ${
+                  item.urgency === 'HIGH' ? 'bg-red-100 text-red-600' : 
                   item.urgency === 'MEDIUM' ? 'bg-yellow-100 text-yellow-600' : 
-                  'bg-gray-200 text-gray-500'
+                  'bg-gray-100 text-gray-500'
                 }`}>
                   {item.urgency}
                 </span>
@@ -178,20 +228,20 @@ export default function WishlistPage() {
 
               {/* STATUS */}
               <div className="w-1/6">
-                <span className={`inline-block w-28 text-center py-1.5 font-semibold rounded-lg text-[0.65rem] ${getStatusBadgeStyle(item.status)}`}>
+                <span className={`inline-block w-28 text-center py-1.5 font-bold rounded-lg text-[10px] tracking-widest ${getStatusBadgeStyle(item.status)}`}>
                   {item.status.replace('_', ' ')}
                 </span>
               </div>
 
               {/* PROGRESS */}
               <div className="w-1/5 flex items-center gap-3">
-                <div className="w-full bg-gray-200 h-2 rounded-full">
+                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
                   <div
-                    className="bg-green-500 h-2 rounded-full"
+                    className="bg-green-500 h-full rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(item.percentage_completed || 0, 100)}%` }}
                   />
                 </div>
-                <span className="w-12 text-xs text-black font-semibold text-right">
+                <span className="w-12 text-[11px] text-gray-900 font-bold text-right">
                   {Math.min(item.percentage_completed || 0, 100).toFixed(0)}%
                 </span>
               </div>

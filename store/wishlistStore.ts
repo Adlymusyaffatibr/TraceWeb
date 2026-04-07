@@ -30,7 +30,7 @@ interface WishlistState {
   report: WishlistReport;
   isLoading: boolean;
   error: string | null;
-  fetchWishlists: (status?: string, urgency?: string) => Promise<void>;
+  fetchWishlists: (status?: string, urgency?: string, q?: string, sort?: string) => Promise<void>;
   fetchWishlistById: (id: string) => Promise<void>;
   fetchReport: () => Promise<void>;
   createWishlist: (data: Partial<Wishlist>) => Promise<void>;
@@ -53,12 +53,14 @@ export const useWishlistStore = create<WishlistState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchWishlists: async (status, urgency) => {
+  fetchWishlists: async (status, urgency, q, sort) => {
     set({ isLoading: true, error: null });
     try {
       const params = new URLSearchParams();
       if (status) params.append('status', status);
       if (urgency) params.append('urgency', urgency);
+      if (q) params.append('q', q);
+      if (sort) params.append('sort', sort);
 
       const res = await axios.get(`http://localhost:5000/wishlist?${params.toString()}`, { withCredentials: true });
       set({ wishlists: res.data.data, isLoading: false });

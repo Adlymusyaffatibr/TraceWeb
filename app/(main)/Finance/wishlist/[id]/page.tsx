@@ -6,6 +6,8 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import { useTransactionStore } from '@/store/transactionStore';
 import Modal from '@/components/Modal';
 import Input from '@/components/ui/Input';
+import WishlistDetailSkeleton from '@/components/skeletons/WishlistDetailSkeleton';
+import ProgressItemSkeleton from '@/components/skeletons/ProgressItemSkeleton';
 
 const CalendarIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -54,7 +56,8 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const parseNumeric = (val: string) => {
-    return val.replace(/\./g, "");
+    if (!val) return "0";
+    return val.replace(/\D/g, "");
   };
 
   const [editItem, setEditItem] = useState<{
@@ -90,8 +93,21 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
     }
   }, [currentWishlist]);
 
+  if (!currentWishlist && isWishlistLoading) {
+    return (
+      <div className="p-8 bg-[#f5f5f5] min-h-screen text-gray-800 flex flex-col relative overflow-hidden">
+        <WishlistDetailSkeleton />
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <ProgressItemSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (!currentWishlist) {
-    return <div className="p-8 text-center text-gray-500">Loading wishlist data...</div>;
+    return <div className="p-8 text-center text-gray-500">Wishlist not found.</div>;
   }
 
   const formatCurrency = (amount: number) => {
@@ -278,7 +294,7 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
                 style={{ width: `${Math.min(Number(percentage), 100)}%` }}
               />
             </div>
-            <span className="text-[13px] font-semibold text-gray-900 w-8 text-right">{Math.min(Number(percentage), 100).toFixed(1)}%</span>
+            <span className="text-[13px] font-semibold text-gray-900 w-14 text-right">{Math.min(Number(percentage), 100).toFixed(1)}%</span>
           </div>
         </div>
       </div>
@@ -296,8 +312,12 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
 
       {/* TABLE LIST */}
       <div className="space-y-3 flex-1 overflow-y-auto pb-4">
-        {progressList.length === 0 ? (
-          <div className="text-center text-gray-400 mt-6">No progress transactions yet. Add progress to see it here!</div>
+        {isWishlistLoading ? (
+           Array.from({ length: 3 }).map((_, i) => (
+            <ProgressItemSkeleton key={i} />
+          ))
+        ) : progressList.length === 0 ? (
+          <div className="text-center text-gray-400 mt-6 bg-white py-12 rounded-xl">No progress transactions yet. Add progress to see it here!</div>
         ) : (
           progressList.map((item) => (
             <div 
@@ -363,8 +383,12 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
               value={progressAmount}
               onChange={(e) => {
                 let cleaned = parseNumeric(e.target.value);
-                if (Number(cleaned) > notCollected) {
-                  cleaned = Math.max(0, notCollected).toString();
+                // Ensure we compare against valid numbers
+                const numericVal = Number(cleaned) || 0;
+                const safeRemaining = Math.max(0, targetAmount - currentAmount);
+                
+                if (numericVal > safeRemaining) {
+                  cleaned = safeRemaining.toString();
                 }
                 setProgressAmount(formatNumeric(cleaned));
               }}
@@ -390,13 +414,18 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
               autoFocus
               value={selectedProgress.amount}
               onChange={(e) => {
-                let cleaned = parseNumeric(e.target.value);
-                // Get original amount of this transaction from progressList
-                const originalAmount = Number(progressList.find(t => t.id.toString() === selectedProgress.id)?.amount || 0);
-                // Allow up to Target - (Total - Original)
-                const maxAllowable = targetAmount - (currentAmount - originalAmount);
-                if (Number(cleaned) > maxAllowable) {
-                  cleaned = Math.max(0, maxAllowable).toString();
+                let cleaned = e.target.value.replace(/\D/g, '');
+                // Get original amount safely
+                const originalTransaction = progressList.find(t => String(t.id) === String(selectedProgress.id));
+                const originalAmount = originalTransaction ? Number(originalTransaction.amount) : 0;
+                
+                // Max = Target - (Total - This)
+                const otherTotal = Math.max(0, currentAmount - originalAmount);
+                const maxAllowable = Math.max(0, targetAmount - otherTotal);
+                
+                const numericVal = Number(cleaned) || 0;
+                if (numericVal > maxAllowable) {
+                  cleaned = maxAllowable.toString();
                 }
                 setSelectedProgress({ ...selectedProgress, amount: formatNumeric(cleaned) });
               }}

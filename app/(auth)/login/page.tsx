@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import axios, { Axios, AxiosError } from 'axios'; // <-- Tambahin axios
+import axios, { AxiosError } from 'axios';
 
 export default function AuthPage() {
     const router = useRouter();
@@ -16,7 +16,7 @@ export default function AuthPage() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    // Tambahan state buat nanganin loading & notif error
+    // Manages loading state and error notifications
     const [isLoading, setIsLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -29,16 +29,16 @@ export default function AuthPage() {
     }, [mode]);
 
     const handleSubmit = async () => {
-        // Reset error tiap kali tombol dipencet
+        // Reset error on every submit
         setErrorMsg('');
 
         if (isSignup && !name) {
-            setErrorMsg('Name harus diisi, bro.');
+            setErrorMsg('Name is required.');
             return;
         }
 
         if (!email || !password) {
-            setErrorMsg('Email dan password harus diisi.');
+            setErrorMsg('Email and password are required.');
             return;
         }
 
@@ -46,24 +46,17 @@ export default function AuthPage() {
 
         try {
             if (isSignup) {
-                // --- JALUR SIGN UP (REGISTER) ---
+                // --- SIGN UP FLOW ---
                 const response = await axios.post('http://localhost:5000/auth/register', {
                     name,
                     email,
                     password,
                 });
 
-                console.log('Sukses daftar:', response.data);
 
-                // 👇 INI YANG HARUS DIRUBAH 👇
-                // Sebelumnya lu cuma nulis: router.push("/otp");
-                // WAJIB diganti jadi kayak gini biar emailnya nyangkut di URL:
                 router.push(`/OTP?email=${encodeURIComponent(email)}`);
-
-                // (Catatan: Kalau nama folder halaman OTP lu bukan "otp" tapi "verify-code",
-                // tinggal ganti aja jadi `/verify-code?email=${encodeURIComponent(email)}`)
             } else {
-                // --- JALUR SIGN IN (LOGIN) ---
+                // --- SIGN IN FLOW ---
                 const response = await axios.post(
                     'http://localhost:5000/auth/login',
                     {
@@ -71,28 +64,41 @@ export default function AuthPage() {
                         password,
                     },
                     {
-                        // Wajib banget biar Express nyimpen cookie session di browser lu
+                        // Required so Express saves the session cookie in the browser
                         withCredentials: true,
                     }
                 );
 
-                console.log('Sukses login:', response.data);
-                // Kalau sukses login, langsung masukin ke dashboard
+                // Check if OTP should be bypassed (for Admins)
+                if (response.data.bypassOTP) {
+                    const user = response.data.user;
+                    // Set role cookie for middleware (7 days)
+                    document.cookie = `user_role=${user.role}; path=/; max-age=604800; SameSite=Lax`;
+                    
+                    if (user.role === 'admin') {
+                        router.push('/category');
+                    } else {
+                        router.push('/Finance');
+                    }
+                    return;
+                }
+
+                // On successful login, redirect to OTP verification
                 router.push(`/OTP?email=${encodeURIComponent(email)}`);
             }
         } catch (err: AxiosError | any) {
-            // Tangkep pesan error dari Backend
+            // Catch error messages from the backend
             if (err.response && err.response.data) {
                 setErrorMsg(err.response.data.message);
             } else {
-                setErrorMsg('Gagal nyambung ke server. Cek koneksi atau terminal backend lu.');
+                setErrorMsg('Failed to connect to the server. Check your connection or backend terminal.');
             }
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Fungsi buat nembak ke jalur tol Google Login
+    // Redirect to Google OAuth login
     const handleGoogleLogin = () => {
         window.location.href = 'http://localhost:5000/auth/google';
     };
@@ -108,7 +114,7 @@ export default function AuthPage() {
             <div className="flex w-full md:w-4/12 items-center justify-center bg-white px-8 sm:px-16 md:px-0">
                 <div className="w-full max-w-sm text-center py-10">
                     {/* LOGO */}
-                    {/* Biar error styling dari image tag ga numpuk, div-nya dikeluarin dikit */}
+                    {/* Prevent error styling from image tag from stacking, so the div is separated out a bit */}
                     <div className="flex flex-col items-center justify-center mb-6">
                         <div className="flex items-center gap-2 mb-6">
                             <Image src="/images/logot.jpeg" alt="logo" width={40} height={40} />
@@ -133,7 +139,7 @@ export default function AuthPage() {
                         </p>
                     </div>
 
-                    {/* MENAMPILKAN ERROR JIKA ADA */}
+                    {/* SHOW ERROR IF ANY */}
                     {errorMsg && (
                         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative mb-4 text-sm text-left">
                             {errorMsg}
@@ -193,7 +199,7 @@ export default function AuthPage() {
                     <button
                         onClick={() => {
                             setIsSignup(!isSignup);
-                            setErrorMsg(''); // Clear error pas ganti mode
+                            setErrorMsg(''); // Clear error when switching mode
                         }}
                         disabled={isLoading}
                         className="w-full border border-gray-300 py-2 rounded-full mb-4 hover:bg-gray-100 duration-300 transition cursor-pointer">

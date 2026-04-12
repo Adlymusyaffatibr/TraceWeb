@@ -49,6 +49,8 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
   const [progressAmount, setProgressAmount] = useState("");
   const [selectedProgress, setSelectedProgress] = useState<{ id: string, amount: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   const formatNumeric = (val: string | number) => {
     if (val === undefined || val === null || val === "") return "";
@@ -325,7 +327,7 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
         ) : progressList.length === 0 ? (
           <div className="text-center text-gray-400 mt-6 bg-white py-12 rounded-xl">No progress transactions yet. Add progress to see it here!</div>
         ) : (
-          progressList.map((item) => (
+          progressList.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((item) => (
             <div 
               key={item.id} 
               className="bg-white rounded-xl px-12 py-5 flex items-center justify-between transition hover:bg-gray-50"
@@ -371,6 +373,41 @@ export default function WishlistDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
           ))
+        )}
+      </div>
+
+      {/* PAGINATION */}
+      <div className="flex justify-end gap-2 mt-4">
+        {currentPage > 1 && (
+          <button
+            onClick={() => setCurrentPage((p) => p - 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'<'}
+          </button>
+        )}
+
+        {Array.from({ length: Math.max(1, Math.ceil(progressList.length / ITEMS_PER_PAGE)) }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => setCurrentPage(p)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition
+              ${p === currentPage
+                ? 'bg-gray-800 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'}
+            `}
+          >
+            {p}
+          </button>
+        ))}
+
+        {currentPage < Math.ceil(progressList.length / ITEMS_PER_PAGE) && (
+          <button
+            onClick={() => setCurrentPage((p) => p + 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'>'}
+          </button>
         )}
       </div>
 

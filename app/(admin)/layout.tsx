@@ -20,10 +20,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 withCredentials: true,
             });
 
-            console.log('Logout Berhasil');
+            // Clear role cookie on logout
+            document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
             router.push('/login?mode=signin');
         } catch (err: any) {
-            console.log(err);
         } finally {
             setIsLogout(false);
         }
@@ -69,13 +70,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                                 </div>
                                 </div>
                             </div>
-                        {/* <button onClick={handleLogout}>Logout</button> */}
+                        </div>
+
+                        <div className="absolute bottom-5 w-full px-3 pr-6">
+                            <button
+                                onClick={handleLogout}
+                                disabled={isLogout}
+                                className="w-full bg-[#3e3e3e] hover:bg-red-500/80 text-[#AAAFB2] hover:text-white py-3 rounded-md text-sm font-medium transition duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                            >
+                                <span>{isLogout ? 'Logging out...' : 'Logout'}</span>
+                            </button>
                         </div>
                     </div>
                 </div>
             </aside>
             <main className="w-10/12">
-                {/* Konten dari dashboard/page.tsx bakal dirender di dalem sini */}
+                {/* Main content from dashboard/page.tsx is rendered here */}
                 {children}
             </main>
         </div>

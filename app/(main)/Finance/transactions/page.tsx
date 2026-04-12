@@ -49,7 +49,7 @@ export default function TransactionsPage() {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [isIncomeVisible, setIsIncomeVisible] = useState(true);
   const [isExpenseVisible, setIsExpenseVisible] = useState(true);
-  const ITEMS_PER_PAGE = 7;
+  const ITEMS_PER_PAGE = 15;
 
   const MONTHS = [
     { value: 1, label: 'Jan' },
@@ -629,41 +629,39 @@ export default function TransactionsPage() {
       </div>
 
       {/* PAGINATION */}
-      {totalPages > 1 && (
-        <div className="flex justify-end gap-2 mt-6">
-          {currentPage > 1 && (
-            <button
-              onClick={() => setCurrentPage((p) => p - 1)}
-              className="px-3 py-1 rounded-lg bg-white text-sm"
-            >
-              {'<'}
-            </button>
-          )}
+      <div className="flex justify-end gap-2 mt-6">
+        {currentPage > 1 && (
+          <button
+            onClick={() => setCurrentPage((p) => p - 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'<'}
+          </button>
+        )}
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <button
-              key={p}
-              onClick={() => setCurrentPage(p)}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition
-                ${p === currentPage
-                  ? 'bg-gray-800 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'}
-              `}
-            >
-              {p}
-            </button>
-          ))}
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => setCurrentPage(p)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition
+              ${p === currentPage
+                ? 'bg-gray-800 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'}
+            `}
+          >
+            {p}
+          </button>
+        ))}
 
-          {currentPage < totalPages && (
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="px-3 py-1 rounded-lg bg-white text-sm"
-            >
-              {'>'}
-            </button>
-          )}
-        </div>
-      )}
+        {currentPage < totalPages && (
+          <button
+            onClick={() => setCurrentPage((p) => p + 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'>'}
+          </button>
+        )}
+      </div>
 
     </div>
   );

@@ -23,9 +23,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 withCredentials: true,
             });
 
+            // Clear role cookie on logout
+            document.cookie = "user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
             router.push('/login?mode=signin');
         } catch (err: any) {
-            console.log(err);
         } finally {
             setIsLogout(false);
         }
@@ -136,17 +138,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         </div>
                     </div>
 
-                    {/* LOGOUT (optional) */}
-                    {/* 
-                    <div className="absolute bottom-5 w-full px-3">
+                    <div className="absolute bottom-5 w-full px-3 pr-6">
                         <button
                             onClick={handleLogout}
-                            className="w-full bg-red-500 py-2 rounded-md text-sm"
+                            disabled={isLogout}
+                            className="w-full bg-[#3e3e3e] hover:bg-red-500/80 text-[#AAAFB2] hover:text-white py-3 rounded-md text-sm font-medium transition duration-300 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                         >
-                            Logout
+                            <span>{isLogout ? 'Logging out...' : 'Logout'}</span>
                         </button>
                     </div>
-                    */}
 
                 </div>
             </aside>

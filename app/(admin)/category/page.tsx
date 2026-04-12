@@ -37,10 +37,10 @@ export default function UnifiedCategoryPage() {
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const itemsPerPage = 15;
     
     const currentList = activeTab === 'category' ? categories : subCategories;
-    const totalPages = Math.ceil(currentList.length / itemsPerPage);
+    const totalPages = Math.max(1, Math.ceil(currentList.length / itemsPerPage));
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentItems = currentList.slice(indexOfFirstItem, indexOfLastItem);
@@ -468,35 +468,33 @@ export default function UnifiedCategoryPage() {
                     </div>
 
                     {/* Pagination */}
-                    {currentList.length > 0 && (
-                        <div className="flex items-center justify-between mt-6 text-sm text-[#8c8c8c]">
-                            <div>
-                                Showing: <span className="font-medium text-[#2d2d2d]">{currentItems.length}</span> Of {currentList.length}
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <button
-                                    onClick={() => goToPage(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    className="w-8 h-8 flex items-center justify-center hover:bg-[#ebebeb] rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                                    &lt;
-                                </button>
-                                {generatePagination().map((page, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={() => typeof page === 'number' ? goToPage(page) : undefined}
-                                        className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${Math.floor(currentPage) === page ? 'bg-white shadow-sm border border-[#E5E5E5] text-[#2d2d2d] font-medium' : typeof page === 'number' ? 'hover:bg-[#ebebeb]' : 'cursor-default'}`}>
-                                        {page}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => goToPage(currentPage + 1)}
-                                    disabled={currentPage === totalPages || totalPages === 0}
-                                    className="w-8 h-8 flex items-center justify-center hover:bg-[#ebebeb] rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
-                                    &gt;
-                                </button>
-                            </div>
+                    <div className="flex items-center justify-between mt-6 text-sm text-[#8c8c8c]">
+                        <div>
+                            Showing: <span className="font-medium text-[#2d2d2d]">{currentItems.length}</span> Of {currentList.length}
                         </div>
-                    )}
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="w-8 h-8 flex items-center justify-center hover:bg-[#ebebeb] rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                &lt;
+                            </button>
+                            {generatePagination().map((page, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => typeof page === 'number' ? goToPage(page) : undefined}
+                                    className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${Math.floor(currentPage) === page ? 'bg-white shadow-sm border border-[#E5E5E5] text-[#2d2d2d] font-medium' : typeof page === 'number' ? 'hover:bg-[#ebebeb]' : 'cursor-default'}`}>
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === totalPages || totalPages === 0}
+                                className="w-8 h-8 flex items-center justify-center hover:bg-[#ebebeb] rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                &gt;
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

@@ -22,6 +22,10 @@ export default function WishlistPage() {
   const [filterUrgency, setFilterUrgency] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSort, setActiveSort] = useState<string[]>([]); // ['URGENCY', 'STATUS']
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 15;
 
   const CheckIcon = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -60,6 +64,7 @@ export default function WishlistPage() {
     const delayDebounceFn = setTimeout(() => {
       fetchWishlists(filterStatus || undefined, filterUrgency || undefined, searchQuery || undefined, activeSort.join(','));
       fetchReport();
+      setCurrentPage(1);
     }, 400);
 
     return () => clearTimeout(delayDebounceFn);
@@ -214,7 +219,7 @@ export default function WishlistPage() {
         ) : wishlists.length === 0 ? (
           <div className="text-gray-400 p-12 text-center bg-white rounded-xl">No wishlists found.</div>
         ) : (
-          wishlists.map((item) => (
+          wishlists.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((item) => (
             <div
               key={item.id}
               onClick={() => router.push(`/Finance/wishlist/${item.id}`)}
@@ -257,6 +262,41 @@ export default function WishlistPage() {
               </div>
             </div>
           ))
+        )}
+      </div>
+
+      {/* PAGINATION */}
+      <div className="flex justify-end gap-2 mt-4">
+        {currentPage > 1 && (
+          <button
+            onClick={() => setCurrentPage((p) => p - 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'<'}
+          </button>
+        )}
+
+        {Array.from({ length: Math.max(1, Math.ceil(wishlists.length / ITEMS_PER_PAGE)) }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => setCurrentPage(p)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition
+              ${p === currentPage
+                ? 'bg-gray-800 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'}
+            `}
+          >
+            {p}
+          </button>
+        ))}
+
+        {currentPage < Math.ceil(wishlists.length / ITEMS_PER_PAGE) && (
+          <button
+            onClick={() => setCurrentPage((p) => p + 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'>'}
+          </button>
         )}
       </div>
 

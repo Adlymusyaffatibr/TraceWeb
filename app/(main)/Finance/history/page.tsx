@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useTransactionStore } from '@/store/transactionStore';
 import TransactionItemSkeleton from '@/components/skeletons/TransactionItemSkeleton';
 import Modal from '@/components/Modal';
+import * as XLSX from 'xlsx';
 
 const CalendarIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -21,10 +22,14 @@ export default function HistoryPage() {
   const [endDate, setEndDate] = useState('');
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [showInfo, setShowInfo] = useState(false);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
 
   useEffect(() => {
     fetchHistory(startDate || undefined, endDate || undefined);
-  }, [fetchHistory, startDate, endDate]);
+    setCurrentPage(1);
+  }, [fetchHistory, startDate, endDate, activeTab]);
 
   const filteredData = activeTab === 'ALL' 
     ? historyTransactions 
@@ -46,6 +51,23 @@ export default function HistoryPage() {
   const handleOpenInfo = (trx: any) => {
     setSelectedTransaction(trx);
     setShowInfo(true);
+  };
+
+  const exportToExcel = () => {
+    if (filteredData.length === 0) return;
+
+    const exportData = filteredData.map(trx => ({
+      'Title': trx.title,
+      'Date': formatDate(trx.date),
+      'Amount': trx.amount,
+      'Type': trx.type,
+      'Category / Description': trx.type === 'INCOME' ? (trx.description || '-') : (trx.category?.name || 'Uncategorized'),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+    XLSX.writeFile(workbook, `Transactions_History.xlsx`);
   };
 
   return (
@@ -76,8 +98,18 @@ export default function HistoryPage() {
           ))}
         </div>
 
-        {/* DATE RANGE */}
+        {/* DATE RANGE & EXPORT */}
         <div className="flex items-center gap-4">
+          <button
+            onClick={exportToExcel}
+            className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 transition-colors rounded-xl text-sm font-semibold flex items-center gap-2"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            Export Excel
+          </button>
+          
+          <div className="h-6 w-px bg-gray-200"></div>
+
           <span className="text-[13px] text-gray-400 font-medium">Select Range</span>
           <div className="flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl border border-transparent focus-within:border-gray-200 transition-all">
             <span className="text-gray-400"><CalendarIcon /></span>
@@ -116,7 +148,7 @@ export default function HistoryPage() {
             <p className="font-medium text-sm">No transaction history found for this period.</p>
           </div>
         ) : (
-          filteredData.map((item) => (
+          filteredData.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE).map((item) => (
             <div
               key={item.id}
               className="bg-white px-12 py-5 rounded-2xl flex items-center justify-between transition hover:bg-gray-50 cursor-default shadow-sm border border-transparent hover:border-gray-100"
@@ -160,6 +192,41 @@ export default function HistoryPage() {
               </div>
             </div>
           ))
+        )}
+      </div>
+
+      {/* PAGINATION */}
+      <div className="flex justify-end gap-2 mt-4">
+        {currentPage > 1 && (
+          <button
+            onClick={() => setCurrentPage((p) => p - 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'<'}
+          </button>
+        )}
+
+        {Array.from({ length: Math.max(1, Math.ceil(filteredData.length / ITEMS_PER_PAGE)) }, (_, i) => i + 1).map((p) => (
+          <button
+            key={p}
+            onClick={() => setCurrentPage(p)}
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition
+              ${p === currentPage
+                ? 'bg-gray-800 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-50'}
+            `}
+          >
+            {p}
+          </button>
+        ))}
+
+        {currentPage < Math.ceil(filteredData.length / ITEMS_PER_PAGE) && (
+          <button
+            onClick={() => setCurrentPage((p) => p + 1)}
+            className="px-3 py-1 rounded-lg bg-white text-sm"
+          >
+            {'>'}
+          </button>
         )}
       </div>
 

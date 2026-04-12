@@ -9,37 +9,79 @@ export default function VerifyCodePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Nangkep email dari URL (misal: /otp?email=vedric@gmail.com)
+  // Get email from URL params (e.g. /otp?email=user@gmail.com)
   const emailFromUrl = searchParams.get("email");
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [countdown, setCountdown] = useState(0);
+  const [isResendDisabled, setIsResendDisabled] = useState(false);
 
-  // Kalau user iseng buka halaman /otp tapi nggak bawa email di URL, tendang balik ke registrasi
+  // Redirect to signup if no email param is present in the URL
   useEffect(() => {
     if (!emailFromUrl) {
-      router.push("/login?mode=signup"); // Sesuaikan sama path login lu
+      router.push("/login?mode=signup");
     }
   }, [emailFromUrl, router]);
 
-  // Handle pas user ngetik angka
+  // Handle countdown timer & persistence
+  useEffect(() => {
+    // Check if a cooldown is still active from a previous session
+    const savedTime = localStorage.getItem(`otp_resend_time_${emailFromUrl}`);
+    if (savedTime) {
+      const remaining = Math.floor((Number(savedTime) - Date.now()) / 1000);
+      if (remaining > 0) {
+        setCountdown(remaining);
+        setIsResendDisabled(true);
+      } else {
+        localStorage.removeItem(`otp_resend_time_${emailFromUrl}`);
+      }
+    }
+  }, [emailFromUrl]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            setIsResendDisabled(false);
+            localStorage.removeItem(`otp_resend_time_${emailFromUrl}`);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => clearInterval(timer);
+  }, [countdown, emailFromUrl]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  // Handle digit input
   const handleChange = (value: string, index: number) => {
-    if (!/^[0-9]?$/.test(value)) return; // Cuma boleh angka
+    if (!/^[0-9]?$/.test(value)) return; // Numbers only
 
     const newCode = [...code];
     newCode[index] = value;
     setCode(newCode);
 
-    // Otomatis pindah ke kotak selanjutnya kalau udah diisi
+    // Auto-focus next input when filled
     if (value && index < 5) {
       const next = document.getElementById(`code-${index + 1}`);
       next?.focus();
     }
   };
 
-  // Handle pas user pencet backspace (biar mundur ke kotak sebelumnya)
+  // Handle backspace to move focus to the previous input
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
     if (e.key === "Backspace" && !code[index] && index > 0) {
       const prev = document.getElementById(`code-${index - 1}`);
@@ -47,14 +89,14 @@ export default function VerifyCodePage() {
     }
   };
 
-  // --- LOGIC VERIFY OTP ---
+  // --- VERIFY OTP ---
   const handleSubmit = async () => {
     const finalCode = code.join("");
     setErrorMsg("");
     setSuccessMsg("");
 
     if (finalCode.length < 6) {
-      setErrorMsg("Masukkan 6 digit kode dengan lengkap bro.");
+      setErrorMsg("Please enter the complete 6-digit code.");
       return;
     }
 
@@ -68,8 +110,11 @@ export default function VerifyCodePage() {
         withCredentials: true
       });
 
-      console.log("Sukses Verifikasi:", response.data);
+
       const user = response.data.user;
+
+      // Set role cookie for middleware (7 days)
+      document.cookie = `user_role=${user.role}; path=/; max-age=604800; SameSite=Lax`;
 
       if (user.role === "admin") {
         router.push("/category");
@@ -81,14 +126,14 @@ export default function VerifyCodePage() {
       if (err.response && err.response.data) {
         setErrorMsg(err.response.data.message);
       } else {
-        setErrorMsg("Gagal nyambung ke server bro.");
+        setErrorMsg("Failed to connect to the server.");
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- LOGIC RESEND OTP ---
+  // --- RESEND OTP ---
   const handleResend = async () => {
     setErrorMsg("");
     setSuccessMsg("");
@@ -99,10 +144,16 @@ export default function VerifyCodePage() {
         email: emailFromUrl,
       });
 
-      console.log("Sukses Resend:", response.data);
-      setSuccessMsg("Kode OTP baru udah dikirim ke email lu!");
+
+      setSuccessMsg("Your OTP code has been sent!");
       
-      // Kosongin inputan lagi biar bersih
+      // Apply 3-minute cooldown (180 seconds)
+      const expiryTime = Date.now() + 180 * 1000;
+      localStorage.setItem(`otp_resend_time_${emailFromUrl}`, expiryTime.toString());
+      setCountdown(180);
+      setIsResendDisabled(true);
+
+      // Clear the OTP inputs
       setCode(["", "", "", "", "", ""]);
       document.getElementById("code-0")?.focus();
       
@@ -110,7 +161,7 @@ export default function VerifyCodePage() {
       if (err.response && err.response.data) {
         setErrorMsg(err.response.data.message);
       } else {
-        setErrorMsg("Gagal ngirim ulang OTP.");
+        setErrorMsg("Failed to resend OTP.");
       }
     } finally {
       setIsLoading(false);
@@ -160,7 +211,7 @@ export default function VerifyCodePage() {
             <span className="font-semibold text-black">{emailFromUrl}</span>
           </p>
 
-          {/* NOTIFIKASI ERROR / SUKSES */}
+          {/* ERROR / SUCCESS NOTIFICATION */}
           {errorMsg && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded relative mb-4 text-sm text-left">
               {errorMsg}
@@ -195,16 +246,20 @@ export default function VerifyCodePage() {
             disabled={isLoading}
             className="w-full bg-black text-white py-2 rounded-md mb-4 hover:bg-gray-800 disabled:opacity-50 transition"
           >
-            {isLoading ? "Memproses..." : "Confirm and proceed"}
+            {isLoading ? "Processing..." : "Confirm and proceed"}
           </button>
 
           {/* RESEND */}
           <button 
             onClick={handleResend}
-            disabled={isLoading}
-            className="text-sm text-gray-500 hover:text-black hover:underline disabled:opacity-50 transition"
+            disabled={isLoading || isResendDisabled}
+            className={`text-sm text-gray-500 transition ${
+              isLoading || isResendDisabled 
+                ? "opacity-50 cursor-not-allowed" 
+                : "hover:text-black hover:underline"
+            }`}
           >
-            Resend Code
+            {isResendDisabled ? `Resend Code (${formatTime(countdown)})` : "Resend Code"}
           </button>
 
         </div>
